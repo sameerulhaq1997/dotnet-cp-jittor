@@ -22,7 +22,7 @@ namespace MacroEconomics.Shared.Helpers
             return (GetNewDataContext(connectionString, provider, enableAutoSelect, elHelperInstance));
         }
 
-        public static FrameworkRepository GetPPDataContext(ExecutionLogger elHelperInstance, bool enableAutoSelect = true)
+        public static FrameworkRepository GetJittorDataContext(ExecutionLogger elHelperInstance, bool enableAutoSelect = true)
         {
             return (GetNewDataContext("ConnectionStrings:SCConnectionString", enableAutoSelect, elHelperInstance));
         }
@@ -34,9 +34,9 @@ namespace MacroEconomics.Shared.Helpers
         {
             return (GetNewDataContext("StreamerConnectionString", enableAutoSelect, elHelperInstance));
         }
-        public static FrameworkRepository GetPPDataContext(bool enableAutoSelect = true)
+        public static FrameworkRepository GetJittorDataContext(bool enableAutoSelect = true)
         {
-            return (GetPPDataContext(null, enableAutoSelect));
+            return (GetJittorDataContext(null, enableAutoSelect));
         }
         public static FrameworkRepository GetLiveDBDataContext(bool enableAutoSelect = true)
         {

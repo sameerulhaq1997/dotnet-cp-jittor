@@ -14,11 +14,9 @@ namespace JittorAPI.Controllers
     public class JittorController : ControllerBase
     {
         JittorDataServices jittorDataServices;
-        IHttpContextAccessor _httpContextAccessor;
-        public JittorController(JittorDataServices jittorDataServices, IHttpContextAccessor httpContextAccessor)
+        public JittorController(JittorDataServices jittorDataServices)
         {
             this.jittorDataServices = jittorDataServices;
-            this._httpContextAccessor = httpContextAccessor;
         }
 
 
@@ -125,14 +123,14 @@ namespace JittorAPI.Controllers
                     {
                         if (item.ValidToCreate)
                         {
-                            var userID = int.Parse(_httpContextAccessor.HttpContext.Session.GetString("userID"));
+                            var userID = 0;
                             var result = jittorDataServices.ExecuteCommand(userID, pageName, item.InsertCommand, item.SelectCommand, item.InsertParamaters, ActionTypeEnum.Insert.ToString());
                             results.Add(result);
                             created++;
                         }
                         if (item.ValidToUpdate)
                         {
-                            var userID = int.Parse(_httpContextAccessor.HttpContext.Session.GetString("userID"));
+                            var userID = 0;
                             var result = jittorDataServices.ExecuteCommand(userID, pageName, item.UpdateCommand, item.SelectCommand, item.UpdateParamaters, ActionTypeEnum.Update.ToString());
                             results.Add(result);
                             updated++;
@@ -193,7 +191,7 @@ namespace JittorAPI.Controllers
                     }
                     if (!chartbysectionid)
                     {
-                        var userID = int.Parse(_httpContextAccessor.HttpContext.Session.GetString("userID"));
+                        var userID = 0;
                         bool isDeleted = jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.UrlFriendlyName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());
                         if (isDeleted)
                         {

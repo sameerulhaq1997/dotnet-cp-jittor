@@ -13,7 +13,7 @@ namespace MacroEconomics.Shared.Helpers
          
         static AppConfigs()
         {
-            using FrameworkRepository db = DataContexts.GetBackgroundProcessDataContext(null, true);
+            using FrameworkRepository db = DataContexts.GetCPDataContext(null, true);
             PetaPoco.Sql pSql = PetaPoco.Sql.Builder.Select("*").From("AppConfigs");
             List<AppConfig> list = db.Fetch<AppConfig>(pSql);
 

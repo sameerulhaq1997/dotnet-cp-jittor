@@ -7,6 +7,10 @@
     <RootNamespace>dotnet_cp_jitter</RootNamespace>
   </PropertyGroup>
 
+    <ItemGroup>
+	    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\jittor-bls\jittor-bls.csproj" />
     <ProjectReference Include="..\jittor-shared\jittor-shared.csproj" />

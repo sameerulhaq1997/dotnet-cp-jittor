@@ -1,5 +1,6 @@
 ﻿using MacroEconomics.Models;
 using MacroEconomics.Shared;
+using MacroEconomics.Shared.DataServices;
 using MacroEconomics.Shared.Enums;
 using MacroEconomics.Shared.Helpers;
 using System.Data.SqlClient;
@@ -9,11 +10,15 @@ namespace Jittor.Services
 {
 	public class JittorDataServices 
 	{
+        private readonly FrameworkRepository _tableContext;
+        public JittorDataServices(FrameworkRepository tableContext) {
+            _tableContext = tableContext;   
+        }
         public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName)
         {
             List<JITAttributeType> types = await GetAttributeTypes();
             return await Executor.Instance.GetDataAsync<JittorPageModel?>(() => {
-                using var context = DataContexts.GetPPDataContext();
+                using var context = DataContexts.GetJittorDataContext();
                 JittorPageModel? model = new JittorPageModel();
                  var sql = PetaPoco.Sql.Builder
                      .Select("*")
@@ -45,7 +50,7 @@ namespace Jittor.Services
             
             return await Executor.Instance.GetDataAsync<List<JITAttributeType>>(() =>
             {
-                using var context = DataContexts.GetPPDataContext();
+                using var context = DataContexts.GetJittorDataContext();
                 var sql = PetaPoco.Sql.Builder
                     .Select("*")
                     .From("JITAttributeTypes");
@@ -56,7 +61,7 @@ namespace Jittor.Services
         public JittorPageModel GetPageId(int PageId)
         {
             JittorPageModel? model = new JittorPageModel();
-            using var context = DataContexts.GetPPDataContext();
+            using var context = DataContexts.GetJittorDataContext();
             var sql = PetaPoco.Sql.Builder
                      .Select("*")
                      .From("JITPages")
@@ -68,7 +73,8 @@ namespace Jittor.Services
         {
           
             return await Executor.Instance.GetDataAsync<JittorPageModel?>(() => {
-                using var context = DataContexts.GetPPDataContext();
+                using var tableContext = _tableContext;
+                using var context = DataContexts.GetJittorDataContext();
                 JittorPageModel? model = GetPageModel(urlFriendlyPageName).Result;
                
                 if (loadData && model != null)
@@ -76,7 +82,7 @@ namespace Jittor.Services
                     model.PageTablesData.Clear();
                     foreach (var table in model.PageTables.Where(x => x.ForView))
                     {
-                        var list = context.Fetch<dynamic>($"Select * From {table.TableName} Order By ModifiedOn desc").ToList();
+                        var list = tableContext.Fetch<dynamic>($"Select * From {table.TableName} Order By ModifiedOn desc").ToList();
                         model.PageTablesData.Add(table.TableName, list);
                     }
                     foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName)))
@@ -94,7 +100,7 @@ namespace Jittor.Services
         }
         public List<dynamic> ExecuteCommand(int userId, string tableName, string operationSql, string selectSql, object[] param, string operation)
         {
-            using var context = DataContexts.GetPPDataContext();
+            using var context = _tableContext;
             context.Execute(userId, tableName, operation, selectSql, operationSql, param);
             return context.Fetch<dynamic>(selectSql, param).ToList();
         }
@@ -103,7 +109,7 @@ namespace Jittor.Services
 
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname ,object ChartId)
         {
-            using (var context = DataContexts.GetPPDataContext())
+            using (var context = _tableContext)
             {
                 string chartidchange = ChartId.ToString();
                 int chartidint = Convert.ToInt32(chartidchange);
@@ -128,7 +134,7 @@ namespace Jittor.Services
 
         public bool getRecordsFromChartbySectionId(string columnName, object chartId)
         {
-            using (var context = DataContexts.GetPPDataContext())
+            using (var context = _tableContext)
             {
                 string chartIdString = chartId.ToString();
                 int chartIdInt;
@@ -143,7 +149,7 @@ namespace Jittor.Services
                 {
                     // Use PetaPoco's Query method to execute the SQL query and get the result.
                     string sqlCommandText = $"SELECT TOP 1 * FROM Charts WHERE {columnName} = @0";
-                    var result = context.Query<Charts>(sqlCommandText, chartIdInt);
+                    var result = context.Query<dynamic>(sqlCommandText, chartIdInt);
 
                     // Check if the result contains any rows (records)
                     return result.Any();
