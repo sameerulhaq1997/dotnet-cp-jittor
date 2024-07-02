@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static MacroEconomics.Shared.DataServices.FrameworkRepository;
+using static Jittor.App.DataServices.FrameworkRepository;
 
-namespace MacroEconomics.Shared.DataServices.CustomEntities
+namespace Jittor.App.DataServices.CustomEntities
 {
     public class EventLogEntity : EventLogs
     {

@@ -1,5 +1,4 @@
-﻿using MacroEconomics.Shared;
-using MacroEconomics.Shared.DataServices.CustomEntities;
+﻿using Jittor.Shared;
 using PetaPoco;
 using PetaPoco.Core;
 using System;
@@ -9,8 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using static MacroEconomics.Shared.DataServices.FrameworkRepository;
-using MacroEconomics.Shared.Enums;
+using Jittor.Shared.Enums;
+using Jittor.App.DataServices.CustomEntities;
+using static Jittor.App.DataServices.FrameworkRepository;
 
 namespace PetaPoco
 {

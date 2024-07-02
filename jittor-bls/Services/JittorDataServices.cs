@@ -1,10 +1,10 @@
-﻿using MacroEconomics.Models;
-using MacroEconomics.Shared;
-using MacroEconomics.Shared.DataServices;
-using MacroEconomics.Shared.Enums;
-using MacroEconomics.Shared.Helpers;
+﻿using Jittor.Shared.Enums;
 using System.Data.SqlClient;
-using static MacroEconomics.Shared.DataServices.FrameworkRepository;
+using Jittor.App.DataServices;
+using static Jittor.App.DataServices.FrameworkRepository;
+using Jittor.App;
+using Jittor.App.Helpers;
+using Jittor.App.Models;
 
 namespace Jittor.Services
 {
@@ -47,7 +47,6 @@ namespace Jittor.Services
         }
         public async Task<List<JITAttributeType>> GetAttributeTypes()
         {
-            
             return await Executor.Instance.GetDataAsync<List<JITAttributeType>>(() =>
             {
                 using var context = DataContexts.GetJittorDataContext();
@@ -57,7 +56,6 @@ namespace Jittor.Services
                 return context.Fetch<JITAttributeType>(sql).ToList();
             }, new {  }, 300);
         }
-
         public JittorPageModel GetPageId(int PageId)
         {
             JittorPageModel? model = new JittorPageModel();
@@ -71,10 +69,8 @@ namespace Jittor.Services
         }
         public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName, bool loadData)
         {
-          
             return await Executor.Instance.GetDataAsync<JittorPageModel?>(() => {
                 using var tableContext = _tableContext;
-                using var context = DataContexts.GetJittorDataContext();
                 JittorPageModel? model = GetPageModel(urlFriendlyPageName).Result;
                
                 if (loadData && model != null)
@@ -87,11 +83,11 @@ namespace Jittor.Services
                     }
                     foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName)))
                     {
-                        att.ForigenValues = context.Fetch<ForigenValue>($"Select {att.AttributeName} As ID, {att.ParentTableNameColumn} As Name From {att.ParentTableName}  {(string.IsNullOrEmpty(att.ParentCondition) ? "" :  att.ParentCondition) } order by {att.AttributeName} desc ").ToList();
+                        att.ForigenValues = tableContext.Fetch<ForigenValue>($"Select {att.AttributeName} As ID, {att.ParentTableNameColumn} As Name From {att.ParentTableName}  {(string.IsNullOrEmpty(att.ParentCondition) ? "" :  att.ParentCondition) } order by {att.AttributeName} desc ").ToList();
                     }
                     foreach (var att in model.PageAttributes.Where(x => !string.IsNullOrEmpty(x.AlternameValuesQuery)))
                     {
-                        att.AlternateValues = context.Fetch<string>(att.AlternameValuesQuery).FirstOrDefault();
+                        att.AlternateValues = tableContext.Fetch<string>(att.AlternameValuesQuery).FirstOrDefault();
                     }
                 }
                 return model;

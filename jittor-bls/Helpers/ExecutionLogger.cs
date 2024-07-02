@@ -1,11 +1,11 @@
-﻿using MacroEconomics.Shared.DataServices;
+﻿using Jittor.App.DataServices;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
-using static MacroEconomics.Shared.DataServices.FrameworkRepository;
+using static Jittor.App.DataServices.FrameworkRepository;
 
-namespace MacroEconomics.Shared.Helpers
+namespace Jittor.App.Helpers
 {
     public class ExecutionLogger
     {
@@ -99,7 +99,7 @@ namespace MacroEconomics.Shared.Helpers
         {
             try
             {
-                _aeData.AddOrUpdate(((MemberExpression)expr.Body).Member.Name, expr.Compile().Invoke());
+                //_aeData.AddOrUpdate(((MemberExpression)expr.Body).Member.Name, expr.Compile().Invoke());
             }
             catch (Exception)
             {
@@ -108,7 +108,7 @@ namespace MacroEconomics.Shared.Helpers
 
         public void AddVariable(string variableName, object value)
         {
-            _aeData.AddOrUpdate(variableName, value);
+            //_aeData.AddOrUpdate(variableName, value);
         }
 
         public void AddLastExecutedPetapocoSql(PetaPoco.Sql lastSql)
@@ -130,12 +130,12 @@ namespace MacroEconomics.Shared.Helpers
                 // TODO: Check for DateTime type also
             }
 
-            _aeData.AddOrUpdate(LAST_SQL_KEY, sb.ToString());
+            //_aeData.AddOrUpdate(LAST_SQL_KEY, sb.ToString());
         }
 
         public void AddLastExecutedSql(string lastSql)
         {
-            _aeData.AddOrUpdate(LAST_SQL_KEY, lastSql);
+            //_aeData.AddOrUpdate(LAST_SQL_KEY, lastSql);
         }
     }
 }

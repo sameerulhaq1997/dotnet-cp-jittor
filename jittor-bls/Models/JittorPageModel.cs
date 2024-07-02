@@ -1,9 +1,9 @@
 ﻿using PetaPoco;
 using System.Text;
 using System.Text.Json;
-using static MacroEconomics.Shared.DataServices.FrameworkRepository;
+using static Jittor.App.DataServices.FrameworkRepository;
 
-namespace MacroEconomics.Models
+namespace Jittor.App.Models
 {
     public class JittorPageModel : JITPage
     {

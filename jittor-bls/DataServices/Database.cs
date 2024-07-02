@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using MacroEconomics.Shared.DataServices;
-using MacroEconomics.Shared.Helpers;
+using Jittor.App.Helpers;
 using PetaPoco;
 
-namespace MacroEconomics.Shared.DataServices
+namespace Jittor.App.DataServices
 {
     public partial class FrameworkRepository : Database
     {

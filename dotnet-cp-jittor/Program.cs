@@ -1,6 +1,6 @@
 
+using Jittor.App.DataServices;
 using Jittor.Services;
-using MacroEconomics.Shared.DataServices;
 
 var builder = WebApplication.CreateBuilder(args);
 

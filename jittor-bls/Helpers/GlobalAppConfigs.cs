@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MacroEconomics.Shared.Helpers
+namespace Jittor.App.Helpers
 {
     public static class GlobalAppConfigs
     {

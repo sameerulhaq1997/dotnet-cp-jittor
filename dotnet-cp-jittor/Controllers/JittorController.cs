@@ -1,13 +1,13 @@
 ﻿using Jittor.Services;
-using MacroEconomics.Models;
-using MacroEconomics.Shared.Enums;
+using Jittor.Shared.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using static MacroEconomics.Models.ProcessEntityModel;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Jittor.App.Models;
+using static Jittor.App.Models.ProcessEntityModel;
 
-namespace JittorAPI.Controllers
+namespace Jittor.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

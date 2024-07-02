@@ -4,7 +4,7 @@ using System.Runtime.Caching;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MacroEconomics.Shared.Helpers
+namespace Jittor.App.Helpers
 {
     interface IDataCache
     {

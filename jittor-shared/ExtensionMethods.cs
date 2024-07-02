@@ -4,7 +4,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MacroEconomics.Shared
+namespace Jittor.Shared
 {
     public static class ExtensionMethods
     {

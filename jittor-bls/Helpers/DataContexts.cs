@@ -1,9 +1,9 @@
-﻿using MacroEconomics.Shared.DataServices;
+﻿using Jittor.App.DataServices;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MacroEconomics.Shared.Helpers
+namespace Jittor.App.Helpers
 {
     public static class DataContexts
     {

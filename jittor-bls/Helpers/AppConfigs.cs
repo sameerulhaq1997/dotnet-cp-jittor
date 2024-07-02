@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Jittor.App.DataServices;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Text;
-using MacroEconomics.Shared.DataServices;
-using static MacroEconomics.Shared.DataServices.FrameworkRepository;
+using static Jittor.App.DataServices.FrameworkRepository;
 
-namespace MacroEconomics.Shared.Helpers
+namespace Jittor.App.Helpers
 {
     public class AppConfigs
     {

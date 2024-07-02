@@ -1,5 +1,4 @@
-﻿using MacroEconomics.Shared.DataServices;
-using MacroEconomics.Shared.Helpers;
+﻿using Jittor.App.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -10,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MacroEconomics.Shared
+namespace Jittor.App
 {
     public class Executor
     {

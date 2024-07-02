@@ -12,8 +12,8 @@
     </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\jittor-bls\jittor-bls.csproj" />
-    <ProjectReference Include="..\jittor-shared\jittor-shared.csproj" />
+    <ProjectReference Include="..\jittor-bls\Jittor.App.csproj" />
+    <ProjectReference Include="..\jittor-shared\Jittor.Shared.csproj" />
   </ItemGroup>
 
 </Project>

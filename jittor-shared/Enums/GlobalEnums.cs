@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MacroEconomics.Shared.Enums
+namespace Jittor.Shared.Enums
 {
     public enum Test : int
     {

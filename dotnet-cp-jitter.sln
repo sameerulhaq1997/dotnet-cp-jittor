@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "jittor-bls", "jittor-bls\jittor-bls.csproj", "{01F560A3-A29C-41C8-BD7C-3396ACED8D3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jittor.App", "jittor-bls\Jittor.App.csproj", "{01F560A3-A29C-41C8-BD7C-3396ACED8D3A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "jittor-shared", "jittor-shared\jittor-shared.csproj", "{F12C22C6-2896-45AE-92DF-DAB2169E8E7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jittor.Shared", "jittor-shared\Jittor.Shared.csproj", "{F12C22C6-2896-45AE-92DF-DAB2169E8E7B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-cp-jitter", "dotnet-cp-jittor\dotnet-cp-jitter.csproj", "{D20BC2CB-BC10-44C8-B8D7-2D334CC7F4B7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jittor.Api", "dotnet-cp-jittor\Jittor.Api.csproj", "{D20BC2CB-BC10-44C8-B8D7-2D334CC7F4B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
