@@ -266,6 +266,21 @@ namespace Jittor.App.Models
             public int DisplaySeqNo { get; set; }
             // Add other properties if needed
         }
+        
     }
-
+    public class JittorColumnInfo
+    {
+        public string TableName { get; set; }
+        public string ColumnName { get; set; }
+        public string DataType { get; set; }
+        public string IsNullable { get; set; }
+        public bool IsAutoIncrement { get; set; }
+        public string DefaultValue { get; set; }
+        public bool IsPrimaryKey { get; set; }
+        public bool IsForeignKey { get; set; }
+        public string ColumnDescription { get; set; }
+        public int MaxLength { get; set; }
+        public int NumericPrecision { get; set; }
+        public int NumericScale { get; set; }
+    }
 }

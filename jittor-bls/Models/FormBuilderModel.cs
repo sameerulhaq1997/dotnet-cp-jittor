@@ -1,0 +1,95 @@
+﻿using Jittor.App.Models;
+
+namespace Jittor.App.Models
+{
+    public enum ApplicationFieldTypeEnum
+    {
+        INPUT = 1,
+        TEXT_AREA = 2,
+        SELECT = 3,
+        AUTO_COMPLETE = 4,
+        RADIO_BUTTON = 5,
+        SWITCH = 6,
+        CHECKBOX = 7,
+        DATE_TIME = 8,
+        SELECTABLE_LIST = 9,
+        TREEVIEW_LIST = 10,
+        ADD_REMOVE_SEARCH_TABLE = 11
+    }
+    public enum ApplicationFieldSubTypeEnum
+    {
+        NONE = 1,
+        SINGLE = 2,
+        MULTI = 3,
+        TEXT = 4,
+        PASSWORD = 5,
+        NUMBER = 6,
+        DATE = 7,
+        TIME = 8,
+        DATE_TIME = 9
+    }
+    public enum ApplicationValueTypeEnum
+    {
+        STRING = 1,
+        NUMBER = 2,
+        BOOL = 3,
+        OBJECT = 4,
+        ARRAY = 5
+    }
+    public class InpValue
+    {
+        public dynamic ActualValue { get; set; }
+        public ApplicationValueTypeEnum ValueType { get; set; }
+    }
+    public class CustomValidation
+    {
+        public string Regex { get; set; }
+        public string Flags { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+    public class FieldAction
+    {
+        public int ApplyOn { get; set; }
+        public string TargetSection { get; set; }
+        public string TargetInput { get; set; }
+        public int ActionType { get; set; }
+        public int RunOn { get; set; }
+    }
+    public class FieldModel
+    {
+        public string Label { get; set; }
+        public string CssID { get; set; }
+        public string CssClasses { get; set; }
+        public string HelperText { get; set; }
+        public string Placeholder { get; set; }
+        public string Id { get; set; }
+        public bool IsDisabled { get; set; }
+        public bool IsVisible { get; set; }
+        public ApplicationFieldTypeEnum FieldType { get; set; }
+        public ApplicationFieldSubTypeEnum FieldSubType { get; set; }
+        public InpValue InpValue { get; set; }
+        public List<FieldOption> Options { get; set; }
+        public Dictionary<string, object> Validations { get; set; }
+        public List<FieldAction> Actions { get; set; }
+        public string Name { get; set; }
+        public string TableName { get; set; }
+
+        public FieldModel()
+        {
+            Options = new List<FieldOption>();
+            Validations = new Dictionary<string, object>();
+            Actions = new List<FieldAction>();
+        }
+    }
+    public class FieldOption
+    {
+        public int Value { get; set; }
+        public string Label { get; set; }
+        public bool IsDisabled { get; set; }
+    }
+    public class PageModel
+    {
+        public string PageName { get; set; }
+        public JittorPageModel JittorPageModel { get; set; }
+    }
+}

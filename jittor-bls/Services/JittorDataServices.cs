@@ -5,8 +5,9 @@ using static Jittor.App.DataServices.FrameworkRepository;
 using Jittor.App;
 using Jittor.App.Helpers;
 using Jittor.App.Models;
+using PetaPoco;
 
-namespace Jittor.Services
+namespace Jittor.App.Services
 {
 	public class JittorDataServices 
 	{
@@ -100,9 +101,123 @@ namespace Jittor.Services
             context.Execute(userId, tableName, operation, selectSql, operationSql, param);
             return context.Fetch<dynamic>(selectSql, param).ToList();
         }
+        public async Task<List<JittorColumnInfo>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
+        {
+            return await Executor.Instance.GetDataAsync<List<JittorColumnInfo>>(() =>
+            {
+                using var tableContext = _tableContext;
+                var sql = @"
+            SELECT 
+                c.TABLE_NAME AS TableName,
+                c.COLUMN_NAME AS ColumnName,
+                c.DATA_TYPE AS DataType,
+                CASE WHEN c.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN c.NUMERIC_PRECISION ELSE NULL END AS NumericPrecision,
+                CASE WHEN c.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN c.NUMERIC_SCALE ELSE NULL END AS NumericScale,
+                c.CHARACTER_MAXIMUM_LENGTH AS MaxLength,
+                c.IS_NULLABLE AS IsNullable,
+                CASE WHEN COLUMNPROPERTY(OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME), c.COLUMN_NAME, 'IsIdentity') = 1 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsAutoIncrement,
+                c.COLUMN_DEFAULT AS DefaultValue,
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                    JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu
+                    ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME
+                    WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                    AND ccu.TABLE_NAME = c.TABLE_NAME
+                    AND ccu.COLUMN_NAME = c.COLUMN_NAME
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsPrimaryKey,
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+                    JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                    ON rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+                    WHERE kcu.TABLE_NAME = c.TABLE_NAME
+                    AND kcu.COLUMN_NAME = c.COLUMN_NAME
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsForeignKey,
+                ep.value AS ColumnDescription
+            FROM 
+                INFORMATION_SCHEMA.COLUMNS c
+            LEFT JOIN 
+                sys.columns AS sc
+            ON 
+                sc.object_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
+                AND sc.name = c.COLUMN_NAME
+            LEFT JOIN 
+                sys.extended_properties AS ep
+            ON 
+                ep.major_id = sc.object_id 
+                AND ep.minor_id = sc.column_id 
+                AND ep.name = 'MS_Description'
+            WHERE 
+                c.TABLE_SCHEMA = @0
+                AND c.TABLE_NAME = @1
 
-       
+            UNION ALL
 
+            SELECT 
+                fk.TABLE_NAME AS TableName,
+                c.COLUMN_NAME AS ColumnName,
+                c.DATA_TYPE AS DataType,
+                CASE WHEN c.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN c.NUMERIC_PRECISION ELSE NULL END AS NumericPrecision,
+                CASE WHEN c.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN c.NUMERIC_SCALE ELSE NULL END AS NumericScale,
+                c.CHARACTER_MAXIMUM_LENGTH AS MaxLength,
+                c.IS_NULLABLE AS IsNullable,
+                CASE WHEN COLUMNPROPERTY(OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME), c.COLUMN_NAME, 'IsIdentity') = 1 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsAutoIncrement,
+                c.COLUMN_DEFAULT AS DefaultValue,
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                    JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu
+                    ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME
+                    WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                    AND ccu.TABLE_NAME = c.TABLE_NAME
+                    AND ccu.COLUMN_NAME = c.COLUMN_NAME
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsPrimaryKey,
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+                    JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                    ON rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+                    WHERE kcu.TABLE_NAME = c.TABLE_NAME
+                    AND kcu.COLUMN_NAME = c.COLUMN_NAME
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsForeignKey,
+                ep.value AS ColumnDescription
+            FROM 
+                INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+            JOIN 
+                INFORMATION_SCHEMA.KEY_COLUMN_USAGE fk
+            ON 
+                rc.CONSTRAINT_NAME = fk.CONSTRAINT_NAME
+            JOIN 
+                INFORMATION_SCHEMA.COLUMNS c
+            ON 
+                c.TABLE_SCHEMA = fk.TABLE_SCHEMA
+                AND c.TABLE_NAME = fk.TABLE_NAME
+            LEFT JOIN 
+                sys.columns AS sc
+            ON 
+                sc.object_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
+                AND sc.name = c.COLUMN_NAME
+            LEFT JOIN 
+                sys.extended_properties AS ep
+            ON 
+                ep.major_id = sc.object_id 
+                AND ep.minor_id = sc.column_id 
+                AND ep.name = 'MS_Description'
+            WHERE 
+                rc.UNIQUE_CONSTRAINT_SCHEMA = @0
+                AND rc.UNIQUE_CONSTRAINT_NAME IN (
+                    SELECT CONSTRAINT_NAME
+                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+                    WHERE TABLE_SCHEMA = @0
+                    AND TABLE_NAME = @1
+                    AND CONSTRAINT_TYPE = 'PRIMARY KEY'
+                )
+            ORDER BY 
+                TableName, ColumnName";
+                return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
+            }, new { schemaName, tableName }, 5);
+        }
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname ,object ChartId)
         {
             using (var context = _tableContext)
