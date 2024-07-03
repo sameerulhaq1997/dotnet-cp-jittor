@@ -19,13 +19,19 @@ namespace Jittor.Api.Controllers
             _jittorService = jittorService;
         }
         [HttpGet("page/{pageName}")]
-        public async Task<IActionResult> Page(string pageName)
+        public async Task<IActionResult> GetPage(string pageName)
         {
             var jitorPageModel = await _jittorService.GetPage(pageName);
             return Ok(jitorPageModel);
         }
+        [HttpPost("form-builder")]
+        public async Task<IActionResult> SavePage([FromBody] FormPageModel form)
+        {
+            var jitorPageModel = await _jittorService.CreateNewPage(form);
+            return Ok(jitorPageModel);
+        }
         [HttpGet("colums/{tableName}")]
-        public async Task<IActionResult> Page(string tableName, string? schema = "dbo")
+        public async Task<IActionResult> GetTableColumns(string tableName, string? schema = "dbo")
         {
             var jitorPageModel = await _jittorService.GetTableAndChildTableColumns(tableName, schema);
             var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });

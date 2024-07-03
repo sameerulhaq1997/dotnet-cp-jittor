@@ -57,7 +57,6 @@ namespace Jittor.App.Models
     }
     public class FieldModel
     {
-        public string Label { get; set; }
         public string CssID { get; set; }
         public string CssClasses { get; set; }
         public string HelperText { get; set; }
@@ -73,6 +72,9 @@ namespace Jittor.App.Models
         public List<FieldAction> Actions { get; set; }
         public string Name { get; set; }
         public string TableName { get; set; }
+        public string LabelAr { get; internal set; }
+        public string LabelEn { get; internal set; }
+        public int AttributeTypeId { get; internal set; }
 
         public FieldModel()
         {
@@ -91,5 +93,42 @@ namespace Jittor.App.Models
     {
         public string PageName { get; set; }
         public JittorPageModel JittorPageModel { get; set; }
+    }
+
+    public class Form
+    {
+        public string FormName { get; set; }
+        public List<string> ClassesName { get; set; }
+        public string FormPostAPI { get; set; }
+        public string SoftDeleteColumn { get; set; }
+        public bool ShowListing { get; set; }
+        public bool ShowSearch { get; set; }
+        public string ListingTitle { get; set; }
+        public string Description { get; set; }
+        public bool ShowFilters { get; set; }
+        public int RecordsPerPage { get; set; }
+        public int CurrentPage { get; set; }
+        public string TableName { get; set; }
+        public string TableAlias { get; set; }
+        public string SelectColumns { get; set; }
+        public string Filters { get; set; }
+        public string Orders { get; set; }
+        public string Joins { get; set; }
+    }
+
+    public class Section
+    {
+        public string Label { get; set; }
+        public string Name { get; set; }
+        public string Id { get; set; }
+        public string Class { get; set; }
+        public bool IsVisible { get; set; }
+        public List<FieldModel> Fields { get; set; }
+    }
+    public class FormPageModel
+    {
+        public Form Form { get; set; }
+        public List<Section> Sections { get; set; }
+        public string Extender { get; set; }
     }
 }

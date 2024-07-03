@@ -6,6 +6,8 @@ using Jittor.App;
 using Jittor.App.Helpers;
 using Jittor.App.Models;
 using PetaPoco;
+using Newtonsoft.Json;
+using System.Drawing;
 
 namespace Jittor.App.Services
 {
@@ -68,7 +70,7 @@ namespace Jittor.App.Services
            model = context.Fetch<JittorPageModel>(sql).FirstOrDefault();
             return model;
         }
-        public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName, bool loadData)
+        public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName, bool loadData, int pageNo = 0, int? pageSize = null)
         {
             return await Executor.Instance.GetDataAsync<JittorPageModel?>(() => {
                 using var tableContext = _tableContext;
@@ -79,6 +81,39 @@ namespace Jittor.App.Services
                     model.PageTablesData.Clear();
                     foreach (var table in model.PageTables.Where(x => x.ForView))
                     {
+                        var selectClause = table.SelectColumns ?? "*";
+                        string query = $"SELECT {selectClause} FROM {table.TableName}";
+
+                        var externalTables = selectClause.Split(",").Where(x => !x.Contains(table.TableName)).Select(x => x.Split('.')[0]).Distinct().ToList();
+                        var joins = table.Joins.Split(',');
+                        foreach (var item in joins)
+                        {
+                            query += " " + item;
+                        }
+
+                        var filters = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters);
+                        if (filters != null && filters.Count > 0)
+                        {
+                            var whereClause = string.Join(" AND ", filters.Select(x => x.Key + " = " + x.Value));
+                            query += " WHERE " + whereClause;
+                        }
+
+                        var orderBy = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Orders);
+                        if (orderBy != null && orderBy.Any())
+                        {
+                            var orderClause = string.Join(" , ", orderBy.Select(x => x.Key + " " + x.Value));
+                            query += " Order By " + orderClause;
+                        }
+                        else
+                            query += "Order By ModifiedOn desc";
+
+                        if (pageSize > 0)
+                        {
+                            int offset = (pageNo - 1) * (pageSize ?? 0);
+                            query += $" OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                        }
+
+
                         var list = tableContext.Fetch<dynamic>($"Select * From {table.TableName} Order By ModifiedOn desc").ToList();
                         model.PageTablesData.Add(table.TableName, list);
                     }
@@ -272,6 +307,124 @@ namespace Jittor.App.Services
                     // Return false to indicate that the record cannot be fetched due to an error
                     return false;
                 }
+            }
+        }
+
+
+        public async Task<bool> CreateNewPage(FormPageModel form)
+        {
+            try
+            {
+                var attributeTypes = await GetAttributeTypes();
+                var tableAndChildTableColumns = await GetTableAndChildTableColumns(form.Form.TableName);
+
+                using var context = DataContexts.GetJittorDataContext();
+
+                var page = new JITPage();
+                page.PageName = form.Form.FormName;
+                page.UrlFriendlyName = form.Form.FormName;
+                page.Title = form.Form.FormName;
+                page.GroupID = 1;
+                page.AddNew = true;
+                page.EditRecord = true;
+                page.DeleteRecord = true;
+                page.SoftDeleteColumn = form.Form.SoftDeleteColumn;
+                page.Preview = true;
+                page.ShowSearch = form.Form.ShowSearch;
+                page.ShowListing = form.Form.ShowListing;
+                page.ListingTitle = form.Form.ListingTitle;
+                page.Extender = form.Extender;
+                page.Description = form.Form.Description;
+                page.ShowFilters = form.Form.ShowFilters;
+                page.RecordsPerPage = form.Form.RecordsPerPage;
+                page.CurrentPage = form.Form.CurrentPage;
+                page.PageView = "";
+                page.ListingCommands = "";
+                context.Insert(page);
+
+
+                var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
+                List<JITPageTable> tables = new List<JITPageTable>();
+                foreach (var item in tableNames)
+                {
+                    JITPageTable table = new JITPageTable();
+                    table.PageID = page.PageID;
+                    table.TableName = form.Form.TableName;
+                    table.TableAlias = "";
+                    table.ForView = item == form.Form.TableName ? true : form.Form.ShowSearch;
+                    table.ForOperation = true;
+                    table.SelectColumns = form.Form.SelectColumns;
+                    table.Filters = form.Form.Filters;
+                    table.Orders = form.Form.Orders;
+                    table.Joins = form.Form.Joins;
+                    tables.Add(table);
+                }
+                context.Insert(tables);
+
+
+                var attributes = new List<JITPageAttribute>();
+                foreach (var section in form.Sections)
+                {
+                    foreach (var field in section.Fields)
+                    {
+                        var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id);
+                        if (currentColumn != null)
+                        {
+                            var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
+
+                            JITPageAttribute attribute = new JITPageAttribute();
+                            attribute.PageID = page.PageID;
+                            attribute.TableID = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
+                            attribute.AttributeName = field.Name;
+                            attribute.DisplayNameAr = field.LabelAr;
+                            attribute.DisplayNameEn = field.LabelEn;
+                            attribute.AttributeTypeID = attributeType?.AttributeTypeID ?? 0;
+                            attribute.IsRequired = field.Validations.ContainsKey("required");
+                            attribute.IsForeignKey = currentColumn.IsForeignKey;
+                            attribute.ParentTableName = "Users";
+                            attribute.ParentTableNameColumn = "UserID";
+                            attribute.ParentCondition = "IsActive = 1";
+                            attribute.AutoComplete = true;
+                            attribute.AddNewParentRecord = false;
+
+                            attribute.ValidationExpression = JsonConvert.SerializeObject(field.Validations);
+                            attribute.IsAutoIncreament = currentColumn.IsAutoIncrement;
+                            attribute.IsPrimaryKey = currentColumn.IsPrimaryKey;
+                            attribute.Editable = !field.IsDisabled;
+                            attribute.Searchable = true;
+                            attribute.Displayable = true;
+                            attribute.Sortable = true;
+                            attribute.Filterable = true;
+                            attribute.EditableSeqNo = 1;
+                            attribute.SearchableSeqNo = 1;
+                            attribute.DisplayableSeqNo = 1;
+                            attribute.MaxLength = field.Validations.ContainsKey("maxLenth") ? int.Parse(field.Validations.FirstOrDefault(x => x.Key == "maxLenth").Value.ToString() ?? "0") : currentColumn.MaxLength;
+                            attribute.PlaceholderText = field.Placeholder;
+                            attribute.DisplayFormat = "";
+                            attribute.InputPartialView = "";
+                            attribute.DefaultValue = field.InpValue.ActualValue;
+                            attribute.IsRange = false;
+                            attribute.Range = "";
+                            attribute.DisplayGroupID = 1;
+                            attribute.DisplayStyle = "default";
+                            attribute.IsFile = false;
+                            attribute.AllowListInput = false;
+                            attribute.UploadPath = "";
+                            attribute.FileType = "";
+                            attribute.PartialURLTemplate = "";
+                            attribute.AlternateValues = "";
+                            attribute.AlternameValuesQuery = "";
+                            attributes.Add(attribute);
+                        }
+                    }
+                }
+                context.Insert(attributes);
+                return true;
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return false;
             }
         }
 

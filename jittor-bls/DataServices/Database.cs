@@ -252,6 +252,10 @@ namespace Jittor.App.DataServices
             [Column] public int PageID { get; set; }
             [Column] public bool ForView { get; set; }
             [Column] public bool ForOperation { get; set; }
+            public string SelectColumns { get; set; }
+            public string Filters { get; internal set; }
+            public string Orders { get; internal set; }
+            public string Joins { get; internal set; }
         }
 
         [TableName("JITAttributeDisplayGroups")]

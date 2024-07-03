@@ -283,4 +283,27 @@ namespace Jittor.App.Models
         public int NumericPrecision { get; set; }
         public int NumericScale { get; set; }
     }
+
+
+    public class JittorQueryInfo
+    {
+        public List<string> SelectColumns { get; set; }
+        public Dictionary<string, object> Filters { get; set; }
+        public Dictionary<string, string> Orders { get; set; }
+        public JittorQueryPageInfo Page { get; set; }
+        public List<JittorQueryForeignKeys> ForeignKeys { get; set; }
+    }
+
+    public class JittorQueryPageInfo
+    {
+        public int PageSize { get; set; }
+        public int PageNo { get; set; }
+    }
+    public class JittorQueryForeignKeys
+    {
+        public string? ForeignKey { get; set; }
+        public string? ForeignTableName { get; set; }
+        public string? ForeignTablePrimaryKey { get; set; }
+    }
+
 }
