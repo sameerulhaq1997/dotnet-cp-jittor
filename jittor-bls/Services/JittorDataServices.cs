@@ -256,6 +256,19 @@ namespace Jittor.App.Services
                 return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
             }, new { schemaName, tableName }, 5);
         }
+        public async Task<List<string>> GetAllTables()
+        {
+            return await Executor.Instance.GetDataAsync<List<string>>(() =>
+            {
+                using var tableContext = _tableContext;
+                var sql = @"
+            SELECT 
+            DISTINCT c.TABLE_NAME AS TableName
+            FROM 
+            INFORMATION_SCHEMA.COLUMNS c";
+                return tableContext.Fetch<string>(sql).ToList();
+            }, 5);
+        }
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname ,object ChartId)
         {
             using (var context = _tableContext)

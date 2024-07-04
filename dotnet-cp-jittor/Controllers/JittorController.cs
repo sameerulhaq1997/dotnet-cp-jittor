@@ -75,5 +75,12 @@ namespace Jittor.Api.Controllers
             var res = await _jittorService.GetPageLister(request);
             return Ok(res);
         }
+        [HttpGet("tables")]
+        public async Task<IActionResult> GetAllTables()
+        {
+            var jitorTableModel = await _jittorService.GetAllTables();
+            //var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });
+            return Ok(jitorTableModel);
+        }
     }
 }
