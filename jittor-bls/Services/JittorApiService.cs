@@ -11,10 +11,10 @@ namespace Jittor.App.Services
         {
             _jittorDataServices = jittorDataServices;
         }
-        public async Task<PageModel> GetPage(string pageName)
+        public async Task<dynamic> GetPage(string pageName)
         {
             var res = await _jittorDataServices.GetPageModel(pageName, true) ?? new JittorPageModel();
-            return new PageModel() { PageName = pageName, JittorPageModel = res };
+            return new { PageName = pageName, JittorPageModel = res };
         }
         public async Task<List<FieldModel>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
         {
@@ -41,7 +41,7 @@ namespace Jittor.App.Services
                 field.IsVisible = true;
                 field.FieldType = splittedColumnDescription.Length > 0 ? splittedColumnDescription[0].ParseEnum<ApplicationFieldTypeEnum>() : ApplicationFieldTypeEnum.INPUT;
                 field.FieldSubType = splittedColumnDescription.Length > 1 ? splittedColumnDescription[1].ParseEnum<ApplicationFieldSubTypeEnum>() : ApplicationFieldSubTypeEnum.TEXT;
-                field.InpValue = new InpValue()
+                field.InpValue = new FieldValue()
                 {
                     ActualValue = column.DefaultValue,
                     ValueType = column.DataType.GetApplicationValueTypeEnum()

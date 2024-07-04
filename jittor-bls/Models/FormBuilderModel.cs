@@ -36,25 +36,7 @@ namespace Jittor.App.Models
         OBJECT = 4,
         ARRAY = 5
     }
-    public class InpValue
-    {
-        public dynamic ActualValue { get; set; }
-        public ApplicationValueTypeEnum ValueType { get; set; }
-    }
-    public class CustomValidation
-    {
-        public string Regex { get; set; }
-        public string Flags { get; set; }
-        public string ErrorMessage { get; set; }
-    }
-    public class FieldAction
-    {
-        public int ApplyOn { get; set; }
-        public string TargetSection { get; set; }
-        public string TargetInput { get; set; }
-        public int ActionType { get; set; }
-        public int RunOn { get; set; }
-    }
+ 
     public class FieldModel
     {
         public string CssID { get; set; }
@@ -66,7 +48,7 @@ namespace Jittor.App.Models
         public bool IsVisible { get; set; }
         public ApplicationFieldTypeEnum FieldType { get; set; }
         public ApplicationFieldSubTypeEnum FieldSubType { get; set; }
-        public InpValue InpValue { get; set; }
+        public FieldValue InpValue { get; set; }
         public List<FieldOption> Options { get; set; }
         public Dictionary<string, object> Validations { get; set; }
         public List<FieldAction> Actions { get; set; }
@@ -75,6 +57,9 @@ namespace Jittor.App.Models
         public string LabelAr { get; internal set; }
         public string LabelEn { get; internal set; }
         public int AttributeTypeId { get; internal set; }
+        public JittorColumnInfo CurrentColumn { get; set; }
+        public int PageId { get; set; }
+        public int TableId { get; set; }
 
         public FieldModel()
         {
@@ -89,12 +74,25 @@ namespace Jittor.App.Models
         public string Label { get; set; }
         public bool IsDisabled { get; set; }
     }
-    public class PageModel
+    public class FieldValue
     {
-        public string PageName { get; set; }
-        public JittorPageModel JittorPageModel { get; set; }
+        public dynamic ActualValue { get; set; }
+        public ApplicationValueTypeEnum ValueType { get; set; }
     }
-
+    public class FieldAction
+    {
+        public int ApplyOn { get; set; }
+        public string TargetSection { get; set; }
+        public string TargetInput { get; set; }
+        public int ActionType { get; set; }
+        public int RunOn { get; set; }
+    }
+    public class FormPageModel
+    {
+        public Form Form { get; set; }
+        public List<FormSection> Sections { get; set; }
+        public string Extender { get; set; }
+    }
     public class Form
     {
         public string FormName { get; set; }
@@ -109,14 +107,14 @@ namespace Jittor.App.Models
         public int RecordsPerPage { get; set; }
         public int CurrentPage { get; set; }
         public string TableName { get; set; }
+        public string ListerTableName { get; set; }
         public string TableAlias { get; set; }
         public string SelectColumns { get; set; }
         public string Filters { get; set; }
         public string Orders { get; set; }
         public string Joins { get; set; }
     }
-
-    public class Section
+    public class FormSection
     {
         public string Label { get; set; }
         public string Name { get; set; }
@@ -124,11 +122,5 @@ namespace Jittor.App.Models
         public string Class { get; set; }
         public bool IsVisible { get; set; }
         public List<FieldModel> Fields { get; set; }
-    }
-    public class FormPageModel
-    {
-        public Form Form { get; set; }
-        public List<Section> Sections { get; set; }
-        public string Extender { get; set; }
     }
 }
