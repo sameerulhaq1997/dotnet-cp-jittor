@@ -37,5 +37,12 @@ namespace Jittor.Api.Controllers
             var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });
             return Ok(groupedRes);
         }
+        [HttpGet("tables")]
+        public async Task<IActionResult> GetAllTables()
+        {
+            var jitorTableModel = await _jittorService.GetAllTables();
+            //var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });
+            return Ok(jitorTableModel);
+        }
     }
 }
