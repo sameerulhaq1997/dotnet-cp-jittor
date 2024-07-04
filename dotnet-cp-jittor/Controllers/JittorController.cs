@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Jittor.App.Models;
 using static Jittor.App.Models.ProcessEntityModel;
 using Jittor.App.Services;
+using System.Collections.Generic;
+using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 
 namespace Jittor.Api.Controllers
 {
@@ -36,6 +39,41 @@ namespace Jittor.Api.Controllers
             var jitorPageModel = await _jittorService.GetTableAndChildTableColumns(tableName, schema);
             var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });
             return Ok(groupedRes);
+        }
+        [HttpPost("page/process-entity/{pageName}")]
+        public async Task<IActionResult> ProcessEntity(Dictionary<string, object> keyValuePairs, string pageName)
+        {
+            var res = await _jittorService.ProcessEntity(keyValuePairs, pageName);
+            return Ok(res);
+        }
+        [HttpPost("page/deleteRecord/{PageID}")]
+        public async Task<IActionResult> pageId([FromBody] jitterDeleteModel ID, int PageID)
+        {
+            var res = await _jittorService.pageId(ID, PageID);
+            return Ok(res);
+        }
+        [HttpPost("page/SortedData")]
+        public async Task<IActionResult> SortedJitterData(int PageID, List<SortableItem> newOrder)
+        {
+            var res = await _jittorService.SortedJitterData(PageID, newOrder);
+            return Ok(res);
+        }
+        [HttpPost("page/lister/{tableId}")]
+        public async Task<IActionResult> GetPageLister(int tableId, int pageNumber = 1, int pageSize = 10, string? sort = null)
+        {
+            Request.Headers.TryGetValue("filters", out StringValues filtersString);
+            var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<Dictionary<string, string>?>(filtersString.ToString())) : null;
+
+            var request = new DataListerRequest()
+            {
+                TableId = tableId,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Sort = sort,
+                Filters = filters
+            };
+            var res = await _jittorService.GetPageLister(request);
+            return Ok(res);
         }
     }
 }

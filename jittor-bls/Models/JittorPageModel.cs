@@ -306,4 +306,22 @@ namespace Jittor.App.Models
         public string? ForeignTablePrimaryKey { get; set; }
     }
 
+
+    public class DataListerRequest
+    {
+        public int TableId { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public string? Sort { get; set; }
+        public Dictionary<string, string>? Filters { get; set; } = null;
+    }
+    public class DataListerResponse<T>
+    {
+        public List<T> Items { get; set; } = new List<T>();
+        public long TotalItemCount { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalItemCount / PageSize);
+    }
+
 }

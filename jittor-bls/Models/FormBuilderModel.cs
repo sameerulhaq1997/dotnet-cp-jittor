@@ -123,4 +123,16 @@ namespace Jittor.App.Models
         public bool IsVisible { get; set; }
         public List<FieldModel> Fields { get; set; }
     }
+
+    public class ResponseModel
+    {
+        public string Result { get; set; }
+        public string Message { get; set; }
+        public string Page { get; set; }
+        public object Data { get; set; } // Use a specific type instead of object if you know the type of Data
+        public int Created { get; set; }
+        public int Updared { get; set; }
+    }
+
+
 }

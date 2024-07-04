@@ -81,7 +81,7 @@ namespace Jittor.App.Helpers
                 .ForMember(dest => dest.ParentTableName, opt => opt.MapFrom(src => "Users"))
                 .ForMember(dest => dest.ParentTableNameColumn, opt => opt.MapFrom(src => "UserID"))
                 .ForMember(dest => dest.ParentCondition, opt => opt.MapFrom(src => "IsActive = 1"))
-                .ForMember(dest => dest.AutoComplete, opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.AutoComplete, opt => opt.MapFrom(src => false))
                 .ForMember(dest => dest.ValidationExpression, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.Validations)))
                 .ForMember(dest => dest.IsAutoIncreament, opt => opt.MapFrom(src => src.CurrentColumn.IsAutoIncrement))
                 .ForMember(dest => dest.IsPrimaryKey, opt => opt.MapFrom(src => src.CurrentColumn.IsPrimaryKey))
