@@ -407,9 +407,10 @@ namespace Jittor.App.Services
                 sql.OrderBy(request.Sort ?? (table.Orders ?? ""));
             else
                 sql.OrderBy("ModifiedOn DESC");
-          
-            int offset = (request.PageNumber - 1) * request.PageSize;
-            sql.Append($"OFFSET {offset} ROWS FETCH NEXT {request.PageSize} ROWS ONLY");
+
+            int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
+            int offset = (request.PageNumber - 1) * pageSize;
+            sql.Append($"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY");
             
             var list = tableContext.Fetch<dynamic>(sql).ToList();
 
@@ -417,7 +418,7 @@ namespace Jittor.App.Services
             {
                 Items = list,
                 PageNumber = request.PageNumber,
-                PageSize = request.PageSize,
+                PageSize = pageSize,
                 TotalItemCount = count
             };
         }
