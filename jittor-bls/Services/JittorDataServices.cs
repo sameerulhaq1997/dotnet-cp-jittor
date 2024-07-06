@@ -84,40 +84,38 @@ namespace Jittor.App.Services
                     model.PageTablesData.Clear();
                     foreach (var table in model.PageTables.Where(x => x.ForView))
                     {
-                        var selectClause = table.SelectColumns ?? "*";
-                        string query = $"SELECT {selectClause} FROM {table.TableName}";
+                        //var selectClause = table.SelectColumns ?? "*";
+                        //string query = $"SELECT {selectClause} FROM {table.TableName}";
 
-                        var externalTables = selectClause.Split(",").Where(x => !x.Contains(table.TableName)).Select(x => x.Split('.')[0]).Distinct().ToList();
-                        var joins = table.Joins.Split(',');
-                        foreach (var item in joins)
-                        {
-                            query += " " + item;
-                        }
+                        //var externalTables = selectClause.Split(",").Where(x => !x.Contains(table.TableName)).Select(x => x.Split('.')[0]).Distinct().ToList();
+                        //var joins = table.Joins.Split(',');
+                        //foreach (var item in joins)
+                        //{
+                        //    query += " " + item;
+                        //}
 
-                        var filters = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters);
-                        if (filters != null && filters.Count > 0)
-                        {
-                            var whereClause = string.Join(" AND ", filters.Select(x => x.Key + " = " + x.Value));
-                            query += " WHERE " + whereClause;
-                        }
+                        //var filters = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters);
+                        //if (filters != null && filters.Count > 0)
+                        //{
+                        //    var whereClause = string.Join(" AND ", filters.Select(x => x.Key + " = " + x.Value));
+                        //    query += " WHERE " + whereClause;
+                        //}
 
-                        var orderBy = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Orders);
-                        if (orderBy != null && orderBy.Any())
-                        {
-                            var orderClause = string.Join(" , ", orderBy.Select(x => x.Key + " " + x.Value));
-                            query += " Order By " + orderClause;
-                        }
-                        else
-                            query += "Order By ModifiedOn desc";
+                        //var orderBy = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Orders);
+                        //if (orderBy != null && orderBy.Any())
+                        //{
+                        //    var orderClause = string.Join(" , ", orderBy.Select(x => x.Key + " " + x.Value));
+                        //    query += " Order By " + orderClause;
+                        //}
+                        //else
+                        //    query += "Order By ModifiedOn desc";
 
-                        if (pageSize > 0)
-                        {
-                            int offset = (pageNo - 1) * (pageSize ?? 0);
-                            query += $" OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
-                        }
-
-
-                        var list = tableContext.Fetch<dynamic>($"Select * From {table.TableName} Order By ModifiedOn desc").ToList();
+                        //if (pageSize > 0)
+                        //{
+                        //    int offset = (pageNo - 1) * (pageSize ?? 0);
+                        //    query += $" OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
+                        //}
+                        var list = tableContext.Fetch<dynamic>($"Select top 10 * From {table.TableName} Order By ModifiedOn desc").ToList();
                         model.PageTablesData.Add(table.TableName, list);
                     }
                     foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName)))
