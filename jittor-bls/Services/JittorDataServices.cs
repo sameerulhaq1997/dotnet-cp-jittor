@@ -337,18 +337,20 @@ namespace Jittor.App.Services
 
                 var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
                 List<JITPageTable> tables = new List<JITPageTable>();
+                var mainTable = form.Form.TableName;
+
                 foreach (var item in tableNames)
                 {
                     var newTable = form.Form;
-                    newTable.ListerTableName = form.Form.TableName;
+                    newTable.TableName = item;
+                    newTable.ListerTableName = mainTable;
                     var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
                     table.PageID = Convert.ToInt32(pageId);
-                    tables.Add(table);
                     context.Insert(table);
+                    tables.Add(table);
                 }
 
 
-                var attributes = new List<JITPageAttribute>();
                 foreach (var section in form.Sections)
                 {
                     foreach (var field in section.Fields)
@@ -363,7 +365,6 @@ namespace Jittor.App.Services
                             field.CurrentColumn = currentColumn;
 
                             var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
-                            attributes.Add(attribute);
                             context.Insert(attribute);
                         }
                     }

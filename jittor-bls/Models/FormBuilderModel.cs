@@ -127,10 +127,10 @@ namespace Jittor.App.Models
     {
         public string Label { get; set; }
         public string Id { get; set; }
-        public string CssClass { get; set; }
+        public string CssClasses { get; set; }
         public string CssID { get; set; }
         public bool IsVisible { get; set; }
-        public int displayableSeqNo { get; set; }
+        public int DisplayableSeqNo { get; set; }
         public List<FieldModel> Fields { get; set; }
     }
 
