@@ -58,15 +58,15 @@ namespace Jittor.Api.Controllers
             var res = await _jittorService.SortedJitterData(PageID, newOrder);
             return Ok(res);
         }
-        [HttpPost("page/lister/{tableId}")]
-        public async Task<IActionResult> GetPageLister(int tableId, int pageNumber = 1, int pageSize = 10, string? sort = null)
+        [HttpGet("page/lister/{pageId}")]
+        public async Task<IActionResult> GetPageLister(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
         {
             Request.Headers.TryGetValue("filters", out StringValues filtersString);
             var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<Dictionary<string, string>?>(filtersString.ToString())) : null;
 
             var request = new DataListerRequest()
             {
-                TableId = tableId,
+                PageId = pageId,
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 Sort = sort,
@@ -82,5 +82,6 @@ namespace Jittor.Api.Controllers
             //var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });
             return Ok(jitorTableModel);
         }
+
     }
 }

@@ -313,11 +313,11 @@ namespace Jittor.App.Models
 
     public class DataListerRequest
     {
-        public int TableId { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public string? Sort { get; set; }
         public Dictionary<string, string>? Filters { get; set; } = null;
+        public int PageId { get; set; }
     }
     public class DataListerResponse<T>
     {

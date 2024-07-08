@@ -355,7 +355,7 @@ namespace Jittor.App.Services
                 {
                     foreach (var field in section.Fields)
                     {
-                        var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id);
+                        var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
                         if (currentColumn != null)
                         {
                             var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
@@ -380,51 +380,58 @@ namespace Jittor.App.Services
         }
         public async Task<DataListerResponse<dynamic>> GetPageLister(DataListerRequest request)
         {
-            using var tableContext = _tableContext;
-            using var context = DataContexts.GetJittorDataContext();
-            var table = context.Fetch<JITPageTable>("SELECT * FROM JITPageTables WHERE TableId = @0 AND ForView = 1", request.TableId).FirstOrDefault();
-
-            if (table == null)
+            try
             {
-                return new DataListerResponse<dynamic>();
+                using var tableContext = _tableContext;
+                using var context = DataContexts.GetJittorDataContext();
+                var table = context.Fetch<JITPageTable>("SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1", request.PageId).FirstOrDefault();
+
+                if (table == null)
+                {
+                    return new DataListerResponse<dynamic>();
+                }
+
+                var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (table.TableName + ".*") : table.SelectColumns;
+                var sql = Sql.Builder.Append($"SELECT {selectClause} FROM {table.TableName}");
+                var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
+
+
+                var joins = table.Joins?.Split(',').Where(x => !string.IsNullOrEmpty(x)).ToList() ?? new List<string>();
+                foreach (var join in joins)
+                {
+                    sql.Append(" " + join);
+                }
+
+                request.Filters = request.Filters ?? new Dictionary<string, string>();
+                request.Filters.Concat(JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters) ?? new Dictionary<string, string>());
+                foreach (var filter in request.Filters)
+                {
+                    sql.Where("{@0} = {@1}", filter.Key, filter.Value);
+                }
+
+                if (table.Orders != null || request.Sort != null)
+                    sql.OrderBy(request.Sort ?? (table.Orders ?? ""));
+                else
+                    sql.OrderBy("ModifiedOn DESC");
+
+                int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
+                int offset = (request.PageNumber - 1) * pageSize;
+                sql.Append($"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY");
+
+                var list = tableContext.Fetch<dynamic>(sql).ToList();
+
+                return new DataListerResponse<dynamic>()
+                {
+                    Items = list,
+                    PageNumber = request.PageNumber,
+                    PageSize = pageSize,
+                    TotalItemCount = count
+                };
             }
-
-            var selectClause = table.SelectColumns ?? "*";
-            var sql = Sql.Builder.Append($"SELECT {selectClause} FROM {table.TableName}");
-            var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
-
-
-            var joins = table.Joins?.Split(',') ?? new string[0];
-            foreach (var join in joins)
+            catch(Exception ex) 
             {
-                sql.Append(join);
+                return null;
             }
-
-            request.Filters = request.Filters ?? new Dictionary<string, string>();
-            request.Filters.Concat(JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters) ?? new Dictionary<string, string>());
-            foreach (var filter in request.Filters)
-            {
-                sql.Where("{@0} = {@1}", filter.Key, filter.Value);
-            }
-
-            if (table.Orders != null || request.Sort != null)
-                sql.OrderBy(request.Sort ?? (table.Orders ?? ""));
-            else
-                sql.OrderBy("ModifiedOn DESC");
-
-            int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
-            int offset = (request.PageNumber - 1) * pageSize;
-            sql.Append($"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY");
-            
-            var list = tableContext.Fetch<dynamic>(sql).ToList();
-
-            return new DataListerResponse<dynamic>()
-            {
-                Items = list,
-                PageNumber = request.PageNumber,
-                PageSize = pageSize,
-                TotalItemCount = count
-            };
         }
     }
 }
