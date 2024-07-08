@@ -31,13 +31,13 @@ namespace Jittor.App.Services
                 field.TableName = column.TableName;
                 field.LabelEn = splittedColumnDescription.Length > 2 ? splittedColumnDescription[2] : column.ColumnName;
                 field.HelperText = field.LabelEn;
-                field.Placeholder = field.LabelEn;
+                field.PlaceholderEn = field.LabelEn;
+                field.PlaceholderAr = field.LabelAr;
 
                 field.CssClasses = splittedColumnDescription.Length > 3 ? splittedColumnDescription[3] : column.ColumnName;
                 field.CssID = field.CssClasses;
 
                 field.Id = column.ColumnName;
-                field.Name = column.ColumnName;
 
                 field.IsDisabled = false;
                 field.IsVisible = true;
@@ -138,6 +138,7 @@ namespace Jittor.App.Services
                     var list = ProcessEntityModel.ProcessFrom(keyValuePairs, pageModel, types);
                     foreach (var item in list)
                     {
+                        item.InsertCompulsaryFields = pageModel.InsertCompulsaryFields;
                         if (item.ValidToCreate)
                         {
                             var userID = 0;

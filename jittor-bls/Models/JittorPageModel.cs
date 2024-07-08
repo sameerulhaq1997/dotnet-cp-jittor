@@ -75,6 +75,7 @@ namespace Jittor.App.Models
         public bool ValidToUpdate { get; set; } = false;
         public bool ValidToDelete { get; set; } = false;
         public List<JITAttributeType> AttributeTypes { get; set; } = new List<JITAttributeType>();
+        public bool InsertCompulsaryFields { get; set; }
         public string InsertCommand
         {
             get
@@ -89,15 +90,15 @@ namespace Jittor.App.Models
                 var parameters = Enumerable.Range(0, attribs.Length).Select(x => $"@{x}");
 
                 // Append the additional fields to attribs
-                string[] allAttribs = attribs.Concat(new[] { "CreatedOn", "CreatedBy", "ModifiedOn", "ModifiedBy" }).ToArray();
+                string[] allAttribs = InsertCompulsaryFields ? attribs.Concat(new[] { "CreatedOn", "CreatedBy", "ModifiedOn", "ModifiedBy" }).ToArray() : attribs;
 
                 // Get the index of the first additional parameter
                 int startIndex = attribs.Length;
 
                 // Append the additional parameters to parameters using dynamic indices
-                var allParameters = parameters.Concat(
+                var allParameters = InsertCompulsaryFields ? parameters.Concat(
                     Enumerable.Range(startIndex, 4).Select(x => $"@{x}")
-                );
+                ) : parameters;
 
                 sb.Append($"INSERT INTO {this.TableName} ({string.Join(",", allAttribs)}) VALUES({string.Join(",", allParameters)});");
                 return sb.ToString();
@@ -162,10 +163,13 @@ namespace Jittor.App.Models
                 }
 
                 // Add the additional field values to the parameters list
-                list.Add(DateTime.Now);  // CreatedOn
-                list.Add(11000);         // CreatedBy
-                list.Add(DateTime.Now);  // ModifiedOn
-                list.Add(11000);         // ModifiedBy
+                if (InsertCompulsaryFields)
+                {
+                    list.Add(DateTime.Now);  // CreatedOn
+                    list.Add(11000);         // CreatedBy
+                    list.Add(DateTime.Now);  // ModifiedOn
+                    list.Add(11000);         // ModifiedBy
+                }
 
                 return list.ToArray();
             }

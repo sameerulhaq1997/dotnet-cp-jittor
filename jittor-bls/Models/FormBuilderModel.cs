@@ -42,7 +42,8 @@ namespace Jittor.App.Models
         public string CssID { get; set; }
         public string CssClasses { get; set; }
         public string HelperText { get; set; }
-        public string Placeholder { get; set; }
+        public string PlaceholderEn { get; set; }
+        public string PlaceholderAr { get; set; }
         public string Id { get; set; }
         public bool IsDisabled { get; set; }
         public bool IsVisible { get; set; }
@@ -52,14 +53,21 @@ namespace Jittor.App.Models
         public List<FieldOption> Options { get; set; }
         public Dictionary<string, object> Validations { get; set; }
         public List<FieldAction> Actions { get; set; }
-        public string Name { get; set; }
         public string TableName { get; set; }
-        public string LabelAr { get; internal set; }
-        public string LabelEn { get; internal set; }
-        public int AttributeTypeId { get; internal set; }
-        public JittorColumnInfo CurrentColumn { get; set; }
-        public int PageId { get; set; }
-        public int TableId { get; set; }
+        public string LabelAr { get; set; }
+        public string LabelEn { get; set; }
+        public int? AttributeTypeId { get; set; }
+        public string ParentTableName { get; set; }
+        public string ParentTableNameColumn { get; set; }
+        public string ParentCondition { get; set; }
+        public int DisplayableSeqNo { get; set; }
+        public int SearchableSeqNo { get; set; }
+        public string OptionIdColumn { get; set; }
+        public string OptionLabelColumn { get; set; }
+        public string OptionTable { get; set; }
+        public JittorColumnInfo? CurrentColumn { get; set; }
+        public int? PageId { get; set; }
+        public int? TableId { get; set; }
 
         public FieldModel()
         {
@@ -91,36 +99,38 @@ namespace Jittor.App.Models
     {
         public Form Form { get; set; }
         public List<FormSection> Sections { get; set; }
-        public string Extender { get; set; }
+        
     }
     public class Form
     {
         public string FormName { get; set; }
         public List<string> ClassesName { get; set; }
-        public string FormPostAPI { get; set; }
         public string SoftDeleteColumn { get; set; }
         public bool ShowListing { get; set; }
         public bool ShowSearch { get; set; }
         public string ListingTitle { get; set; }
+        
         public string Description { get; set; }
         public bool ShowFilters { get; set; }
         public int RecordsPerPage { get; set; }
         public int CurrentPage { get; set; }
         public string TableName { get; set; }
-        public string ListerTableName { get; set; }
+        public string? ListerTableName { get; set; }
         public string TableAlias { get; set; }
         public string SelectColumns { get; set; }
         public string Filters { get; set; }
         public string Orders { get; set; }
         public string Joins { get; set; }
+        public string Extender { get; set; }
     }
     public class FormSection
     {
         public string Label { get; set; }
-        public string Name { get; set; }
         public string Id { get; set; }
-        public string Class { get; set; }
+        public string CssClass { get; set; }
+        public string CssID { get; set; }
         public bool IsVisible { get; set; }
+        public int displayableSeqNo { get; set; }
         public List<FieldModel> Fields { get; set; }
     }
 

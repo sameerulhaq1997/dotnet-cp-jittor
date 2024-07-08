@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Drawing;
 using System.Reflection;
 using System.Collections.Generic;
+using System;
 
 namespace Jittor.App.Services
 {
@@ -26,9 +27,9 @@ namespace Jittor.App.Services
                 using var context = DataContexts.GetJittorDataContext();
                 JittorPageModel? model = new JittorPageModel();
                  var sql = PetaPoco.Sql.Builder
-                     .Select("*")
-                     .From("JITPages")
-                     .Where("UrlFriendlyName = @0", urlFriendlyPageName);
+                     .Select(" * ")
+                     .From(" JITPages ")
+                     .Where(" UrlFriendlyName = @0", urlFriendlyPageName);
                 model = context.Fetch<JittorPageModel>(sql).FirstOrDefault();
                 if (model != null)
                 {
@@ -332,7 +333,7 @@ namespace Jittor.App.Services
                 using var context = DataContexts.GetJittorDataContext();
 
                 var page = JittorMapperHelper.Map<JITPage, FormPageModel>(form);
-                context.Insert(page);
+                var pageId = context.Insert(page);
 
                 var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
                 List<JITPageTable> tables = new List<JITPageTable>();
@@ -341,9 +342,10 @@ namespace Jittor.App.Services
                     var newTable = form.Form;
                     newTable.ListerTableName = form.Form.TableName;
                     var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
+                    table.PageID = Convert.ToInt32(pageId);
                     tables.Add(table);
+                    context.Insert(table);
                 }
-                context.Insert(tables);
 
 
                 var attributes = new List<JITPageAttribute>();
@@ -359,12 +361,14 @@ namespace Jittor.App.Services
                             field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
                             field.PageId = page.PageID;
                             field.CurrentColumn = currentColumn;
+
                             var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
                             attributes.Add(attribute);
+                            context.Insert(attribute);
                         }
                     }
                 }
-                context.Insert(attributes);
+               // context.Insert(attributes);
                 return true;
             }
             catch(Exception e)
@@ -376,8 +380,9 @@ namespace Jittor.App.Services
         public async Task<DataListerResponse<dynamic>> GetPageLister(DataListerRequest request)
         {
             using var tableContext = _tableContext;
+            using var context = DataContexts.GetJittorDataContext();
+            var table = context.Fetch<JITPageTable>("SELECT * FROM JITPageTables WHERE TableId = @0 AND ForView = 1", request.TableId).FirstOrDefault();
 
-            var table = tableContext.Fetch<JITPageTable>("SELECT * FROM JITPageTables WHERE TableId = @0 AND ForView = 1", request.TableId).FirstOrDefault();
             if (table == null)
             {
                 return new DataListerResponse<dynamic>();

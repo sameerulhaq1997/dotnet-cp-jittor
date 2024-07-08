@@ -15,7 +15,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddSingleton<JittorDataServices>(provider =>
 {
-    var repository = new FrameworkRepository("ConnectionStrings:SCConnectionString")
+    var repository = new FrameworkRepository("ConnectionStrings:CPConnectionString")
     {
         EnableAutoSelect = true,
     };

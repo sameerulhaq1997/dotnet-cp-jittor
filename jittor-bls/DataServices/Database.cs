@@ -199,6 +199,12 @@ namespace Jittor.App.DataServices
             [Column] public string AlternateValues { get; set; }
             public List<ForigenValue> ForigenValues { get; set; }
             [Column] public string AlternameValuesQuery { get; set; }
+            [Column] public string HasChildLookUp { get; set; }
+            [Column] public string LookUpQuery { get; set; }
+            [Column] public string HasLookUpData { get; set; }
+            [Column] public string LookUpColumn { get; set; }
+            [Column] public string LookUpTable { get; set; }
+            [Column] public string SectionName { get; set; }
 
         }
         [TableName("JITPages")]
@@ -229,6 +235,7 @@ namespace Jittor.App.DataServices
             [Column] public string Description { get; set; }
             [Column] public string PageView { get; set; }
             [Column] public string ListingCommands { get; set; }
+            [Column] public bool InsertCompulsaryFields { get; set; }
         }
 
         [TableName("JITPagesGroups")]
