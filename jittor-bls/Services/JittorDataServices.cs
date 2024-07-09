@@ -268,6 +268,16 @@ namespace Jittor.App.Services
                 return tableContext.Fetch<string>(sql).ToList();
             }, 5);
         }
+        public async Task<List<JITPage>> GetAllPages()
+        {
+            return await Executor.Instance.GetDataAsync<List<JITPage>>(() =>
+            {
+                using var context = DataContexts.GetJittorDataContext();
+                var sql = @"
+            Select * from JITPages";
+                return context.Fetch<JITPage>(sql).ToList();
+            }, 5);
+        }
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname ,object ChartId)
         {
             using (var context = _tableContext)
