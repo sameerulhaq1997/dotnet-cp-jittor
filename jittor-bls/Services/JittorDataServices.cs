@@ -396,19 +396,19 @@ namespace Jittor.App.Services
                 var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (table.TableName + ".*") : table.SelectColumns;
                 var sql = Sql.Builder.Append($"SELECT {selectClause} FROM {table.TableName}");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
-
+                var selectColumnList = selectClause.Split(',');
 
                 var joins = table.Joins?.Split(',').Where(x => !string.IsNullOrEmpty(x)).ToList() ?? new List<string>();
                 foreach (var join in joins)
                 {
                     sql.Append(" " + join);
                 }
-
-                request.Filters = request.Filters ?? new Dictionary<string, string>();
-                request.Filters.Concat(JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters) ?? new Dictionary<string, string>());
+                request.Filters = request.Filters ?? new List<PageFilterModel>();
+                request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
                 foreach (var filter in request.Filters)
                 {
-                    sql.Where("{@0} = {@1}", filter.Key, filter.Value);
+                    sql.Append($"Where @0 = @1", "ArticleAttachments.FileURL", "'http://argaamplus.s3.amazonaws.com/a062c986-d8aa-4cbb-b792-69d29b5e89f9.pdf'");
+                    //sql = sql.BuildWhereClause(filter);
                 }
 
                 if (table.Orders != null || request.Sort != null)
@@ -433,7 +433,7 @@ namespace Jittor.App.Services
                     TotalItemCount = count,
                     Columns = columns.Select(x => new
                     {
-                        Field = x,
+                        Field = selectColumnList.FirstOrDefault(y => y.Contains(x)),
                         HeaderName = x
                     }).ToList()
                 };

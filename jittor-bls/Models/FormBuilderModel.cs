@@ -151,6 +151,13 @@ namespace Jittor.App.Models
         public string ForOperation { get; set; }
         public string ForView { get; set; }
     }
+    public class PageFilterModel
+    {
+        public string Field { get; set; }
+        public string Operator { get; set; }
+        public string Value { get; set; }
+        public string Operation { get; set; }
+    }
 
 
 }

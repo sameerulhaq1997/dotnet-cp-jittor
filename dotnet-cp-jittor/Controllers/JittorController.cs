@@ -61,19 +61,27 @@ namespace Jittor.Api.Controllers
         [HttpGet("page/lister/{pageId}")]
         public async Task<IActionResult> GetPageLister(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
         {
-            Request.Headers.TryGetValue("filters", out StringValues filtersString);
-            var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<Dictionary<string, string>?>(filtersString.ToString())) : null;
-
-            var request = new DataListerRequest()
+            try
             {
-                PageId = pageId,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                Sort = sort,
-                Filters = filters
-            };
-            var res = await _jittorService.GetPageLister(request);
-            return Ok(res);
+                Request.Headers.TryGetValue("filters", out StringValues filtersString);
+                var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
+                //var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<Dictionary<string, string>?>(filtersString.ToString())) : null;
+
+                var request = new DataListerRequest()
+                {
+                    PageId = pageId,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    Sort = sort,
+                    Filters = filters
+                };
+                var res = await _jittorService.GetPageLister(request);
+                return Ok(res);
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
         [HttpGet("form-builder/lister/{pageId}")]
         public async Task<IActionResult> GetFormBuilderLister(int pageId)

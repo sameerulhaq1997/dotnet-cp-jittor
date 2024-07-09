@@ -324,7 +324,7 @@ namespace Jittor.App.Models
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
         public string? Sort { get; set; }
-        public Dictionary<string, string>? Filters { get; set; } = null;
+        public List<PageFilterModel>? Filters { get; set; } = null;
         public int PageId { get; set; }
     }
     public class DataListerResponse<T>
