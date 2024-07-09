@@ -39,6 +39,18 @@ namespace Jittor.App.Services
         {
             return (T)Enum.Parse(typeof(T), value);
         }
+        public static Dictionary<string, object> GetValuesFromDynamicDictionary(dynamic item, List<string> keys)
+        {
+            var results = new Dictionary<string, object>();
+            if (item is IDictionary<string, object> dictionary)
+            {
+                foreach (var key in keys)
+                {
+                    results.Add(key, dictionary[key]);
+                }
+            }
+            return results;
+        }
 
     }
 }
