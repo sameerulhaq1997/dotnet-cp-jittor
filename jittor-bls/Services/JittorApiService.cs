@@ -282,5 +282,10 @@ namespace Jittor.App.Services
             var res = await _jittorDataServices.GetPageLister(request);
             return res;
         }
+        public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)
+        {
+            var res = await _jittorDataServices.GetFormBuilderLister(pageId);
+            return res;
+        }
     }
 }

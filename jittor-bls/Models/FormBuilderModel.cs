@@ -143,6 +143,14 @@ namespace Jittor.App.Models
         public int Created { get; set; }
         public int Updared { get; set; }
     }
+    public class FormBuilderListerModel
+    {
+        public string PageName { get; set; }
+        public string UrlFriendlyName { get; set; }
+        public string Title { get; set; }
+        public string ForOperation { get; set; }
+        public string ForView { get; set; }
+    }
 
 
 }

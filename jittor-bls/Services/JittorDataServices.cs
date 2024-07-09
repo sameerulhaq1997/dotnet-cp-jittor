@@ -249,6 +249,27 @@ namespace Jittor.App.Services
                 return context.Fetch<JITPage>(sql).ToList();
             }, 5);
         }
+        public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)
+        {
+            return await Executor.Instance.GetDataAsync<List<FormBuilderListerModel>>(() =>
+            {
+                using var context = DataContexts.GetJittorDataContext();
+                var sql = PetaPoco.Sql.Builder.Append(@"SELECT p.PageName,p.UrlFriendlyName,p.Title,
+                STUFF((SELECT ', ' + t1.TableName
+               FROM JITPageTables t1
+               WHERE t1.PageID = p.PageID and t1.ForOperation = 1
+               FOR XML PATH (''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ForOperation,
+                STUFF((SELECT ', ' + t1.TableName
+               FROM JITPageTables t1
+               WHERE t1.PageID = p.PageID  and t1.ForView = 1
+               FOR XML PATH (''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ForView
+                FROM 
+                    JITPages p
+                WHERE 
+                    p.PageID = @0", pageId);
+                return context.Fetch<FormBuilderListerModel>(sql).ToList();
+            }, 5);
+        }
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname ,object ChartId)
         {
             using (var context = _tableContext)

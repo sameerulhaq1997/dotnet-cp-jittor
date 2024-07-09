@@ -75,6 +75,12 @@ namespace Jittor.Api.Controllers
             var res = await _jittorService.GetPageLister(request);
             return Ok(res);
         }
+        [HttpGet("form-builder/lister/{pageId}")]
+        public async Task<IActionResult> GetFormBuilderLister(int pageId)
+        {
+            var res = await _jittorService.GetFormBuilderLister(pageId);
+            return Ok(res);
+        }
         [HttpGet("tables")]
         public async Task<IActionResult> GetAllTables()
         {
