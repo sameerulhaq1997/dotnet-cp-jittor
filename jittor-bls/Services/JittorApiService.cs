@@ -1,4 +1,5 @@
-﻿using Jittor.App.Helpers;
+﻿using AutoMapper.Internal;
+using Jittor.App.Helpers;
 using Jittor.App.Models;
 using Jittor.Shared.Enums;
 using PetaPoco;
@@ -161,6 +162,17 @@ namespace Jittor.App.Services
                     foreach (var item in list)
                     {
                         item.InsertCompulsaryFields = pageModel.InsertCompulsaryFields;
+                        var foreignKeyValues = new Dictionary<string, object>();
+                        var attributes = item.TableAttributes.Where(y => pageModel.PageTables.Any(x => x.TableName == y.ParentTableName));
+                        if (attributes.Count() > 0)
+                        {
+                            foreach (var tableValues in results.SelectMany(innerList => innerList))
+                            {
+                                Dictionary<string, object> foreignKeyValue = ExtensionService.GetValuesFromDynamicDictionary(tableValues, attributes.Select(x => x.AttributeName).ToList());
+                                foreignKeyValues = foreignKeyValues.Concat(foreignKeyValue).GroupBy(kvp => kvp.Key).ToDictionary(group => group.Key, group => group.Last().Value);
+                            }
+                        }
+                        item.ForeignKeyValues = foreignKeyValues;
                         if (item.ValidToCreate)
                         {
                             var userID = 0;

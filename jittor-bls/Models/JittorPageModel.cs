@@ -76,6 +76,7 @@ namespace Jittor.App.Models
         public bool ValidToDelete { get; set; } = false;
         public List<JITAttributeType> AttributeTypes { get; set; } = new List<JITAttributeType>();
         public bool InsertCompulsaryFields { get; set; }
+        public Dictionary<string, object> ForeignKeyValues { get; set; }
         public string InsertCommand
         {
             get
@@ -147,12 +148,15 @@ namespace Jittor.App.Models
             get
             {
                 List<object> list = new List<object>();
-
                 foreach (var key in this.OtherValues.Keys)
                 {
                     var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
                     var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                    if (OtherValues[key] == null)
+                    if (ForeignKeyValues.ContainsKey(key))
+                    {
+                        list.Add(ForeignKeyValues[key]);
+                    }
+                    else if (OtherValues[key] == null)
                     {
                         list.Add(t.GetDefaultValue());
                     }
@@ -184,7 +188,11 @@ namespace Jittor.App.Models
                 {
                     var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
                     var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                    if (OtherValues[key] == null)
+                    if (ForeignKeyValues.ContainsKey(key))
+                    {
+                        list.Add(ForeignKeyValues[key]);
+                    }
+                    else if (OtherValues[key] == null)
                     {
                         list.Add(t.GetDefaultValue());
                     }
@@ -243,7 +251,7 @@ namespace Jittor.App.Models
                         entity.ValidToCreate = false;
                         entity.ErrorMessages.Add($"{att.DisplayNameEn} is required");
                     }
-                    else if (att.IsRequired == false && !string.IsNullOrEmpty(att.DefaultValue))
+                    else if (att.IsRequired == false && (!string.IsNullOrEmpty(att.DefaultValue) || model.PageTables.Any(x => x.TableName == att.ParentTableName)))
                     {
                         entity.OtherValues.Add(att.AttributeName, att.DefaultValue);
                     }
