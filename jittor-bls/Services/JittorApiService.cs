@@ -1,8 +1,11 @@
-﻿using Jittor.App.Models;
+﻿using Jittor.App.Helpers;
+using Jittor.App.Models;
 using Jittor.Shared.Enums;
 using PetaPoco;
+using System.Reflection.Emit;
 using static Jittor.App.DataServices.FrameworkRepository;
 using static Jittor.App.Models.ProcessEntityModel;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Jittor.App.Services
 {
@@ -13,10 +16,24 @@ namespace Jittor.App.Services
         {
             _jittorDataServices = jittorDataServices;
         }
-        public async Task<dynamic> GetPage(string pageName)
+        public async Task<FormPageModel> GetPage(string pageName)
         {
             var res = await _jittorDataServices.GetPageModel(pageName, true) ?? new JittorPageModel();
-            return new { PageName = pageName, JittorPageModel = res };
+
+            var formPageModel = JittorMapperHelper.Map<FormPageModel, JITPage>(res);
+            formPageModel.Form = JittorMapperHelper.Map<Form, JITPageTable>(res.PageTables.FirstOrDefault(x => x.ForView) ?? new JITPageTable());
+            formPageModel.Form.FormName = res.PageName;
+
+            formPageModel.Sections = new List<FormSection>();
+            FormSection formSection = new FormSection();
+            formSection.Label = formPageModel.Form.FormName;
+            formSection.Id = formPageModel.Form.FormName;
+            formSection.IsVisible = true;
+            formSection.Fields = new List<FieldModel>();
+            formSection.Fields.AddRange(JittorMapperHelper.MapList<FieldModel, JITPageAttribute>(res.PageAttributes));
+            formPageModel.Sections.Add(formSection);
+
+            return formPageModel;
         }
         public async Task<List<FieldModel>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
         {

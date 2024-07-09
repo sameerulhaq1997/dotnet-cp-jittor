@@ -42,8 +42,10 @@ namespace Jittor.App.Services
                     foreach (var att in model.PageAttributes.Where(x => x.Editable))
                     {
                         var at = types.Where(x => x.AttributeTypeID == att.AttributeTypeID).First();
-
-                        selectedRecord.Add(att.AttributeName, at.GetDefaultValue());
+                        if(!selectedRecord.ContainsKey(att.AttributeName))
+                        {
+                            selectedRecord.Add(att.AttributeName, at.GetDefaultValue());
+                        }
                     }
                     model.SelectedRecord = selectedRecord;
                 }
@@ -85,39 +87,8 @@ namespace Jittor.App.Services
                     model.PageTablesData.Clear();
                     foreach (var table in model.PageTables.Where(x => x.ForView))
                     {
-                        //var selectClause = table.SelectColumns ?? "*";
-                        //string query = $"SELECT {selectClause} FROM {table.TableName}";
-
-                        //var externalTables = selectClause.Split(",").Where(x => !x.Contains(table.TableName)).Select(x => x.Split('.')[0]).Distinct().ToList();
-                        //var joins = table.Joins.Split(',');
-                        //foreach (var item in joins)
-                        //{
-                        //    query += " " + item;
-                        //}
-
-                        //var filters = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Filters);
-                        //if (filters != null && filters.Count > 0)
-                        //{
-                        //    var whereClause = string.Join(" AND ", filters.Select(x => x.Key + " = " + x.Value));
-                        //    query += " WHERE " + whereClause;
-                        //}
-
-                        //var orderBy = JsonConvert.DeserializeObject<Dictionary<string, string>>(table.Orders);
-                        //if (orderBy != null && orderBy.Any())
-                        //{
-                        //    var orderClause = string.Join(" , ", orderBy.Select(x => x.Key + " " + x.Value));
-                        //    query += " Order By " + orderClause;
-                        //}
-                        //else
-                        //    query += "Order By ModifiedOn desc";
-
-                        //if (pageSize > 0)
-                        //{
-                        //    int offset = (pageNo - 1) * (pageSize ?? 0);
-                        //    query += $" OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY";
-                        //}
-                        var list = tableContext.Fetch<dynamic>($"Select top 10 * From {table.TableName} Order By ModifiedOn desc").ToList();
-                        model.PageTablesData.Add(table.TableName, list);
+                        //var list = tableContext.Fetch<dynamic>($"Select top 10 * From {table.TableName} Order By ModifiedOn desc").ToList();
+                        //model.PageTablesData.Add(table.TableName, list);
                     }
                     foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName)))
                     {
@@ -419,13 +390,21 @@ namespace Jittor.App.Services
                 sql.Append($"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY");
 
                 var list = tableContext.Fetch<dynamic>(sql).ToList();
+                List<string> columns = new List<string>();
+                if (list.Count > 0)
+                    columns = ((IDictionary<string, object>)list[0]).Keys.ToList();
 
                 return new DataListerResponse<dynamic>()
                 {
                     Items = list,
                     PageNumber = request.PageNumber,
                     PageSize = pageSize,
-                    TotalItemCount = count
+                    TotalItemCount = count,
+                    Columns = columns.Select(x => new
+                    {
+                        Field = x,
+                        HeaderName = x
+                    }).ToList()
                 };
             }
             catch(Exception ex) 
