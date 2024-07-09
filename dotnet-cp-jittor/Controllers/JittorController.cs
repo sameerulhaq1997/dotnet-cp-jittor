@@ -83,5 +83,12 @@ namespace Jittor.Api.Controllers
             return Ok(jitorTableModel);
         }
 
+        [HttpGet("pages")]
+        public async Task<IActionResult> GetAllPages()
+        {
+            var jitorTableModel = await _jittorService.GetAllPages();
+            return Ok(jitorTableModel);
+        }
+
     }
 }

@@ -86,6 +86,11 @@ namespace Jittor.App.Services
             var tables = await _jittorDataServices.GetAllTables();
             return tables;
         }
+        public async Task<List<JITPage>> GetAllPages()
+        {
+            var pages = await _jittorDataServices.GetAllPages();
+            return pages;
+        }
         public async Task<bool> CreateNewPage(FormPageModel form)
         {
             return await _jittorDataServices.CreateNewPage(form);
