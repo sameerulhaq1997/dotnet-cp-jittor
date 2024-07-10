@@ -38,7 +38,7 @@ namespace Jittor.App.Services
         }
         public async Task<List<FieldModel>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
         {
-            var columns = await _jittorDataServices.GetTableAndChildTableColumns(tableName, schemaName);
+            var columns = _jittorDataServices.GetTableAndChildTableColumns(tableName, schemaName);
             List<FieldModel> fields = new List<FieldModel>();
 
             foreach (var column in columns)
@@ -84,7 +84,7 @@ namespace Jittor.App.Services
 
         public async Task<List<string>> GetAllTables()
         {
-            var tables = await _jittorDataServices.GetAllTables();
+            var tables = _jittorDataServices.GetAllTables();
             return tables;
         }
         public async Task<List<JITPage>> GetAllPages()

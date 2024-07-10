@@ -20,7 +20,6 @@ namespace Jittor.App.Services
         private readonly FrameworkRepository _tableContext;
         private Dictionary<string, List<JittorColumnInfo>> tableColumns = new Dictionary<string, List<JittorColumnInfo>>();
         private List<TableNode> tableNodes = new List<TableNode>();
-        private Dictionary<string, TableNode> tableDict = new Dictionary<string, TableNode>();
         private readonly string _projectId;
         public JittorDataServices(FrameworkRepository tableContext, string projectId)
         {
@@ -119,91 +118,15 @@ namespace Jittor.App.Services
             context.Execute(userId, tableName, operation, selectSql, operationSql, param);
             return context.Fetch<dynamic>(selectSql, param).ToList();
         }
-        public async Task<List<JittorColumnInfo>> GetChildTablesAndColumns(string tableName, string? schemaName = "dbo")
+        public List<JittorColumnInfo> GetParentTableColumns(List<string> tableName, string? schemaName = "dbo")
         {
-            if (tableColumns.ContainsKey(tableName))
-                return tableColumns[tableName];
-            else
+            var tablesToGet = tableName.Where(x => !tableColumns.Any(y => y.Key == x));
+
+            List<JittorColumnInfo> tableColumnList = new List<JittorColumnInfo>();
+            if (tablesToGet.Count() > 0)
             {
-                return await Executor.Instance.GetDataAsync<List<JittorColumnInfo>>(() =>
-                {
-                    using var tableContext = _tableContext;
-                    var sql = @"
-            SELECT 
-                fk.TABLE_NAME AS TableName,
-                c.COLUMN_NAME AS ColumnName,
-                c.DATA_TYPE AS DataType,
-                CASE WHEN c.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN c.NUMERIC_PRECISION ELSE NULL END AS NumericPrecision,
-                CASE WHEN c.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN c.NUMERIC_SCALE ELSE NULL END AS NumericScale,
-                c.CHARACTER_MAXIMUM_LENGTH AS MaxLength,
-                c.IS_NULLABLE AS IsNullable,
-                CASE WHEN COLUMNPROPERTY(OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME), c.COLUMN_NAME, 'IsIdentity') = 1 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsAutoIncrement,
-                c.COLUMN_DEFAULT AS DefaultValue,
-                CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                    JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu
-                    ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME
-                    WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-                    AND ccu.TABLE_NAME = c.TABLE_NAME
-                    AND ccu.COLUMN_NAME = c.COLUMN_NAME
-                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsPrimaryKey,
-                CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-                    JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                    ON rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-                    WHERE kcu.TABLE_NAME = c.TABLE_NAME
-                    AND kcu.COLUMN_NAME = c.COLUMN_NAME
-                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsForeignKey,
-                ep.value AS ColumnDescription
-            FROM 
-                INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-            JOIN 
-                INFORMATION_SCHEMA.KEY_COLUMN_USAGE fk
-            ON 
-                rc.CONSTRAINT_NAME = fk.CONSTRAINT_NAME
-            JOIN 
-                INFORMATION_SCHEMA.COLUMNS c
-            ON 
-                c.TABLE_SCHEMA = fk.TABLE_SCHEMA
-                AND c.TABLE_NAME = fk.TABLE_NAME
-            LEFT JOIN 
-                sys.columns AS sc
-            ON 
-                sc.object_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
-                AND sc.name = c.COLUMN_NAME
-            LEFT JOIN 
-                sys.extended_properties AS ep
-            ON 
-                ep.major_id = sc.object_id 
-                AND ep.minor_id = sc.column_id 
-                AND ep.name = 'MS_Description'
-            WHERE 
-                rc.UNIQUE_CONSTRAINT_SCHEMA = @0
-                AND rc.UNIQUE_CONSTRAINT_NAME IN (
-                    SELECT CONSTRAINT_NAME
-                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-                    WHERE TABLE_SCHEMA = @0
-                    AND TABLE_NAME = @1
-                    AND CONSTRAINT_TYPE = 'PRIMARY KEY'
-                )
-            ORDER BY 
-                TableName, ColumnName";
-                    return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
-                }, new { schemaName, tableName }, 5);
-            }
-        }
-        public async Task<List<JittorColumnInfo>> GetParentTableColumns(string tableName, string? schemaName = "dbo")
-        {
-            if (tableColumns.ContainsKey(tableName))
-                return tableColumns[tableName];
-            else
-            {
-                return await Executor.Instance.GetDataAsync<List<JittorColumnInfo>>(() =>
-                {
-                    using var tableContext = _tableContext;
-                    var sql = @"
+                using var tableContext = _tableContext;
+                var sql = @"
             SELECT 
                 c.TABLE_NAME AS TableName,
                 c.COLUMN_NAME AS ColumnName,
@@ -247,114 +170,39 @@ namespace Jittor.App.Services
                 AND ep.name = 'MS_Description'
             WHERE 
                 c.TABLE_SCHEMA = @0
-                AND c.TABLE_NAME = @1
+                AND c.TABLE_NAME in (@1)
             ORDER BY 
                 TableName, ColumnName";
-                    return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
-                }, new { schemaName, tableName }, 5);
-            }
+                var newRenderedTables = tableContext.Fetch<JittorColumnInfo>(sql, schemaName ?? "", tablesToGet).ToList();
 
-        }
-        public async Task<List<JittorColumnInfo>> GetLinkedTablesAndColumns(string tableName, string? schemaName = "dbo")
-        {
-            if (tableColumns.ContainsKey(tableName))
-                return tableColumns[tableName];
-            else
-            {
-                return await Executor.Instance.GetDataAsync<List<JittorColumnInfo>>(() =>
+                foreach (var item in newRenderedTables.GroupBy(x => x.TableName))
                 {
-                    using var tableContext = _tableContext;
-                    var sql = @"
-                                SELECT 
-	            tr.name AS TableName,
-	            cr.Column_Name AS ColumnName,
-	            cr.DATA_TYPE AS DataType,
-	            CASE WHEN cr.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN cr.NUMERIC_PRECISION ELSE NULL END AS NumericPrecision,
-                CASE WHEN cr.DATA_TYPE IN ('int', 'bigint', 'smallint', 'tinyint', 'float', 'real') THEN cr.NUMERIC_SCALE ELSE NULL END AS NumericScale,
-	            cr.CHARACTER_MAXIMUM_LENGTH AS MaxLength,
-                cr.IS_NULLABLE AS IsNullable,
-                CASE WHEN COLUMNPROPERTY(OBJECT_ID(cr.TABLE_SCHEMA + '.' + cr.TABLE_NAME), cr.COLUMN_NAME, 'IsIdentity') = 1 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsAutoIncrement,
-	            CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                    JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu
-                    ON tc.CONSTRAINT_NAME = ccu.CONSTRAINT_NAME
-                    WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-                    AND ccu.TABLE_SCHEMA = cr.TABLE_SCHEMA
-                    AND ccu.TABLE_NAME = cr.TABLE_NAME
-                    AND ccu.COLUMN_NAME = cr.COLUMN_NAME
-                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsPrimaryKey,
-	            CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-                    JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                    ON rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-                    WHERE kcu.TABLE_SCHEMA = cr.TABLE_SCHEMA
-                    AND kcu.TABLE_NAME = cr.TABLE_NAME
-                    AND kcu.COLUMN_NAME = cr.COLUMN_NAME
-                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsForeignKey,
-	            ep.value AS ColumnDescription
-            FROM 
-                sys.foreign_keys AS fk
-            INNER JOIN 
-                sys.foreign_key_columns AS fkc 
-                ON fk.object_id = fkc.constraint_object_id
-            INNER JOIN 
-                sys.tables AS tp 
-                ON fkc.parent_object_id = tp.object_id
-            INNER JOIN 
-                sys.columns AS cp 
-                ON fkc.parent_object_id = cp.object_id 
-                AND fkc.parent_column_id = cp.column_id
-            INNER JOIN 
-                sys.tables AS tr 
-                ON fkc.referenced_object_id = tr.object_id
-            INNER JOIN 
-                INFORMATION_SCHEMA.COLUMNS AS cr 
-                ON cr.TABLE_NAME = tr.name
-                AND cr.TABLE_SCHEMA = @0
-            LEFT JOIN 
-                sys.columns AS sc
-            ON 
-                sc.object_id = OBJECT_ID(cr.TABLE_SCHEMA + '.' + cr.TABLE_NAME)
-                AND sc.name = cr.COLUMN_NAME
-            LEFT JOIN 
-                sys.extended_properties AS ep
-            ON 
-                ep.major_id = sc.object_id 
-                AND ep.minor_id = sc.column_id 
-                AND ep.name = 'MS_Description'
-            WHERE 
-                tp.name = @1
-                AND tp.schema_id = SCHEMA_ID(@0)
-            ";
-                    return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
-                }, new { schemaName, tableName }, 5);
+                    tableColumns.Add(item.Key, item.ToList());
+                }
             }
-        }
-        public async Task<List<JittorColumnInfo>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
-        {
-            var parentData = await GetParentTableColumns(tableName, schemaName);
-            var childTablesData = await GetChildTablesAndColumns(tableName, schemaName);
-            var linkedTablesData = await GetLinkedTablesAndColumns(tableName, schemaName);
 
-            parentData.AddRange(childTablesData);
-            parentData.AddRange(linkedTablesData);
-            return parentData;
-            
-        }
-        public async Task<List<string>> GetAllTables()
-        {
-            return await Executor.Instance.GetDataAsync<List<string>>(() =>
+            tableName.ForEach(x =>
             {
-                using var tableContext = _tableContext;
-                var sql = @"
-            SELECT 
-            DISTINCT c.TABLE_NAME AS TableName
-            FROM 
-            INFORMATION_SCHEMA.COLUMNS c";
-                return tableContext.Fetch<string>(sql).ToList();
-            }, 5);
+                tableColumns.TryGetValue(x, out List<JittorColumnInfo>? value);
+                if (value != null)
+                {
+                    tableColumnList.AddRange(value);
+                }
+            });
+            return tableColumnList;
+        }
+
+        
+        public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
+        {
+            var tablesToGet = GetAllRelatedTables(tableName);
+            var parentData = GetParentTableColumns(tablesToGet, schemaName);
+            return parentData;
+
+        }
+        public List<string> GetAllTables()
+        {
+            return tableNodes.Select(x => x.TableName).Distinct().ToList();
         }
         public async Task<List<JITPage>> GetAllPages()
         {
@@ -446,7 +294,7 @@ namespace Jittor.App.Services
             try
             {
                 var attributeTypes = await GetAttributeTypes();
-                var tableAndChildTableColumns = await GetTableAndChildTableColumns(form.Form.TableName);
+                var tableAndChildTableColumns = GetTableAndChildTableColumns(form.Form.TableName);
 
                 using var context = DataContexts.GetJittorDataContext();
 
@@ -525,7 +373,7 @@ namespace Jittor.App.Services
                 if (table.Orders != null || request.Sort != null)
                     orderString = request.Sort ?? (table.Orders ?? "");
 
-                var tableColumns = await GetTableAndChildTableColumns(table.TableName);
+                var tableColumns = GetTableAndChildTableColumns(table.TableName);
                 selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
                 request.Filters = request.Filters.ValidateTableColumns(tableColumns);
                 var orders = orderString.Split(",").ToList().ValidateTableColumns(tableColumns, true);
@@ -536,7 +384,7 @@ namespace Jittor.App.Services
                     selectColumnList.RemoveAll(x => x.Contains("*"));
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
-                
+
 
                 var sql = Sql.Builder.Append($"SELECT {string.Join(',', selectColumnList)} FROM {table.TableName}");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
@@ -594,55 +442,92 @@ namespace Jittor.App.Services
             }
         }
 
-        public void GetAllRelatedTables(string mainTable)
+        public List<string> GetAllRelatedTables(string mainTable)
         {
             mainTable = mainTable.ToLower();
-            List<string> allRelatedTableNames = new List<string>();
-            var childTables = GetChildTableNames(mainTable, tableNodes, tableDict);
+            List<string> allRelatedTableNames = new List<string>() { mainTable };
+            var childTables = GetChildTableNames(mainTable, tableNodes);
             allRelatedTableNames.AddRange(childTables);
-            var parentTables = tableDict.Where(x => x.Value.ChildTables.Any(x => x.TableName.ToLower() == mainTable)).Select(x => x.Key).ToList();
+            var parentTables = tableNodes.Where(x => x.ChildTables.Any(x => x.TableName.ToLower() == mainTable)).Select(x => x.TableName).ToList();
             foreach (var item in parentTables)
             {
-                var itemChildTables = GetChildTableNames("articles", tableNodes, tableDict, allRelatedTableNames);
+                allRelatedTableNames.Add(item);
+                var itemChildTables = GetChildTableNames("articles", tableNodes, allRelatedTableNames);
                 allRelatedTableNames.AddRange(itemChildTables);
             }
+            return allRelatedTableNames;
         }
         public void GetAllTableStructures()
         {
             var relationships = _tableContext.Fetch<TableRelationship>(@"
-            SELECT 
-                TP.name AS ParentTable,
-                TR.name AS ChildTable
-            FROM 
-                sys.foreign_keys AS FK
-            INNER JOIN 
-                sys.tables AS TP ON FK.referenced_object_id = TP.object_id
-            INNER JOIN 
-                sys.tables AS TR ON FK.parent_object_id = TR.object_id
-            ORDER BY 
-                TP.name, TR.name;
-            ");
+    SELECT 
+        TP.name AS ParentTable,
+        TR.name AS ChildTable
+    FROM 
+        sys.foreign_keys AS FK
+    INNER JOIN 
+        sys.tables AS TP ON FK.referenced_object_id = TP.object_id
+    INNER JOIN 
+        sys.tables AS TR ON FK.parent_object_id = TR.object_id
+    ORDER BY 
+        TP.name, TR.name;
+    ");
 
-            tableDict = relationships.SelectMany(r => new[] { r.ParentTable, r.ChildTable }).Distinct()
+            // Debug output to verify relationships fetched
+            Console.WriteLine("Relationships:");
+            foreach (var rel in relationships)
+            {
+                Console.WriteLine($"Parent: {rel.ParentTable}, Child: {rel.ChildTable}");
+            }
+
+            // Create a dictionary for all tables with empty child lists
+            var tableDict = relationships
+                .SelectMany(r => new[] { r.ParentTable, r.ChildTable })
+                .Distinct()
                 .ToDictionary(t => t, t => new TableNode { TableName = t });
-            tableNodes = BuildTableTree(null, relationships, tableDict);
+
+            // Populate child nodes recursively
+            var visited = new HashSet<string>();
+            foreach (var table in tableDict.Keys)
+            {
+                if (!visited.Contains(table))
+                {
+                    BuildTableTree(table, relationships, tableDict, visited);
+                }
+            }
+
+            // Collect all nodes into tableNodes list
+            tableNodes = tableDict.Values.ToList();
+
+            // Debug output to verify table nodes
+            Console.WriteLine("Table Nodes:");
+            foreach (var node in tableNodes)
+            {
+                Console.WriteLine($"Table: {node.TableName}, Child Count: {node.ChildTables.Count}");
+            }
         }
 
-        public static List<TableNode> BuildTableTree(string? parentTable, List<TableRelationship> relationships, Dictionary<string, TableNode> tableDict)
+        private static void BuildTableTree(string parentTable, List<TableRelationship> relationships, Dictionary<string, TableNode> tableDict, HashSet<string> visited)
         {
-            var nodes = new List<TableNode>();
+            if (visited.Contains(parentTable))
+                return;
 
-            var childRelationships = relationships.Where(r => string.IsNullOrEmpty(parentTable) ? true : (r.ParentTable == parentTable)).ToList();
+            visited.Add(parentTable);
 
+            var childRelationships = relationships
+                .Where(r => r.ParentTable == parentTable)
+                .ToList();
+
+            var parentNode = tableDict[parentTable];
             foreach (var rel in childRelationships)
             {
                 var childNode = tableDict[rel.ChildTable];
-                childNode.ChildTables = BuildTableTree(rel.ChildTable, relationships, tableDict);
-                nodes.Add(childNode);
+                parentNode.ChildTables.Add(childNode);
+                BuildTableTree(rel.ChildTable, relationships, tableDict, visited);
             }
-            return nodes;
         }
-        public static List<string> GetChildTableNames(string nodeName, List<TableNode> rootNodes, Dictionary<string, TableNode> tableDict, List<string>? excludeTables = null)
+
+        public static List<string> GetChildTableNames(string nodeName, List<TableNode> rootNodes, List<string>? excludeTables = null)
         {
             var childTableNames = new List<string>();
             var node = rootNodes.FirstOrDefault(n => n.TableName.ToLower() == nodeName);
@@ -651,7 +536,7 @@ namespace Jittor.App.Services
                 foreach (var node2 in node.ChildTables.Where(x => excludeTables != null ? !excludeTables.Contains(x.TableName) : true))
                 {
                     childTableNames.Add(node2.TableName);
-                    GetChildTableNames(node2.TableName, node2.ChildTables, tableDict)
+                    GetChildTableNames(node2.TableName, node2.ChildTables)
                         .ForEach(t => childTableNames.Add(t));
                 }
             }
