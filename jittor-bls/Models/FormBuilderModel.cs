@@ -158,6 +158,13 @@ namespace Jittor.App.Models
         public string Value { get; set; }
         public string Operation { get; set; }
     }
+    public class PageJoinModel
+    {
+        public string JoinType { get; set; }
+        public string JoinTable { get; set; }
+        public string ParentTableColumn { get; set; }
+        public string JoinTableColumn { get; set; }
+    }
 
 
 }
