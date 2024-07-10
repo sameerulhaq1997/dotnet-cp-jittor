@@ -19,11 +19,14 @@ namespace Jittor.App.Services
     {
         private readonly FrameworkRepository _tableContext;
         private Dictionary<string, List<JittorColumnInfo>> tableColumns = new Dictionary<string, List<JittorColumnInfo>>();
+        private List<TableNode> tableNodes = new List<TableNode>();
+        private Dictionary<string, TableNode> tableDict = new Dictionary<string, TableNode>();
         private readonly string _projectId;
         public JittorDataServices(FrameworkRepository tableContext, string projectId)
         {
             _tableContext = tableContext;
             _projectId = projectId;
+            GetAllTableStructures();
         }
         public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName)
         {
@@ -488,5 +491,80 @@ namespace Jittor.App.Services
                 return null;
             }
         }
+
+        public void GetAllRelatedTables(string mainTable)
+        {
+            mainTable = mainTable.ToLower();
+            List<string> allRelatedTableNames = new List<string>();
+            var childTables = GetChildTableNames(mainTable, tableNodes, tableDict);
+            allRelatedTableNames.AddRange(childTables);
+            var parentTables = tableDict.Where(x => x.Value.ChildTables.Any(x => x.TableName.ToLower() == mainTable)).Select(x => x.Key).ToList();
+            foreach (var item in parentTables)
+            {
+                var itemChildTables = GetChildTableNames("articles", tableNodes, tableDict, allRelatedTableNames);
+                allRelatedTableNames.AddRange(itemChildTables);
+            }
+        }
+        public void GetAllTableStructures()
+        {
+            var relationships = _tableContext.Fetch<TableRelationship>(@"
+            SELECT 
+                TP.name AS ParentTable,
+                TR.name AS ChildTable
+            FROM 
+                sys.foreign_keys AS FK
+            INNER JOIN 
+                sys.tables AS TP ON FK.referenced_object_id = TP.object_id
+            INNER JOIN 
+                sys.tables AS TR ON FK.parent_object_id = TR.object_id
+            ORDER BY 
+                TP.name, TR.name;
+            ");
+
+            tableDict = relationships.SelectMany(r => new[] { r.ParentTable, r.ChildTable }).Distinct()
+                .ToDictionary(t => t, t => new TableNode { TableName = t });
+            tableNodes = BuildTableTree(null, relationships, tableDict);
+        }
+
+        public static List<TableNode> BuildTableTree(string? parentTable, List<TableRelationship> relationships, Dictionary<string, TableNode> tableDict)
+        {
+            var nodes = new List<TableNode>();
+
+            var childRelationships = relationships.Where(r => string.IsNullOrEmpty(parentTable) ? true : (r.ParentTable == parentTable)).ToList();
+
+            foreach (var rel in childRelationships)
+            {
+                var childNode = tableDict[rel.ChildTable];
+                childNode.ChildTables = BuildTableTree(rel.ChildTable, relationships, tableDict);
+                nodes.Add(childNode);
+            }
+            return nodes;
+        }
+        public static List<string> GetChildTableNames(string nodeName, List<TableNode> rootNodes, Dictionary<string, TableNode> tableDict, List<string>? excludeTables = null)
+        {
+            var childTableNames = new List<string>();
+            var node = rootNodes.FirstOrDefault(n => n.TableName.ToLower() == nodeName);
+            if (node != null)
+            {
+                foreach (var node2 in node.ChildTables.Where(x => excludeTables != null ? !excludeTables.Contains(x.TableName) : true))
+                {
+                    childTableNames.Add(node2.TableName);
+                    GetChildTableNames(node2.TableName, node2.ChildTables, tableDict)
+                        .ForEach(t => childTableNames.Add(t));
+                }
+            }
+            return childTableNames;
+        }
+    }
+    public class TableRelationship
+    {
+        public string ParentTable { get; set; }
+        public string ChildTable { get; set; }
+    }
+
+    public class TableNode
+    {
+        public string TableName { get; set; }
+        public List<TableNode> ChildTables { get; set; } = new List<TableNode>();
     }
 }
