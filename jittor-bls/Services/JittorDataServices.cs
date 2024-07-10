@@ -405,7 +405,10 @@ namespace Jittor.App.Services
                 }
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
                 request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
-                sql.Append("Where ");
+                if (request.Filters.Count > 0)
+                {
+                    sql.Append("Where ");
+                }
                 foreach (var filter in request.Filters)
                 {
 
