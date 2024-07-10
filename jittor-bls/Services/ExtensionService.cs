@@ -94,9 +94,9 @@ namespace Jittor.App.Services
                     throw new ArgumentException("Invalid operator type");
             }
 
-            return sql.Where("{@0} = {@1}", filter.Field, filter.Value);
+            //return sql.Where("{@0} = {@1}", filter.Field, filter.Value);
 
-            //return sql.Where(" {@0} {@1} {@2} {@3}", filter.Operation, filter.Field,filter.Operator, filter.Value);
+            return sql.Append($" {filter.Operation} {filter.Field} {filter.Operator} '{filter.Value}'");
 
         }
 

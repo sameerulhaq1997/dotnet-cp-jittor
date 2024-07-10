@@ -405,10 +405,11 @@ namespace Jittor.App.Services
                 }
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
                 request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
+                sql.Append("Where ");
                 foreach (var filter in request.Filters)
                 {
-                    sql.Append($"Where @0 = @1", "ArticleAttachments.FileURL", "'http://argaamplus.s3.amazonaws.com/a062c986-d8aa-4cbb-b792-69d29b5e89f9.pdf'");
-                    //sql = sql.BuildWhereClause(filter);
+
+                    sql = sql.BuildWhereClause(filter);
                 }
 
                 if (table.Orders != null || request.Sort != null)
