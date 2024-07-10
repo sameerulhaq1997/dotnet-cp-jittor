@@ -527,6 +527,14 @@ namespace Jittor.App.Services
                 request.Filters = request.Filters.ValidateTableColumns(tableColumns);
                 var orders = orderString.Split(",").ToList().ValidateTableColumns(tableColumns, true);
 
+                if (selectColumnList.Any(x => x.Contains("*")))
+                {
+                    selectColumnList.AddRange(tableColumns.Where(y => selectColumnList.Where(x => x.Contains("*")).Select(x => x.Replace(".*", "").Trim()).Contains(y.TableName)).Select(x => x.TableName + "." + x.ColumnName).ToList());
+                    selectColumnList.RemoveAll(x => x.Contains("*"));
+                    selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
+                }
+                
+
                 var sql = Sql.Builder.Append($"SELECT {string.Join(',', selectColumnList)} FROM {table.TableName}");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)
@@ -565,11 +573,15 @@ namespace Jittor.App.Services
                     PageNumber = request.PageNumber,
                     PageSize = pageSize,
                     TotalItemCount = count,
-                    Columns = columns.Select(x => new
+                    Columns = selectColumnList.Select(x =>
                     {
-                        Field = x,
-                        HeaderName = x,
-                        TableName = selectColumnList.FirstOrDefault(y => y.Contains(x))!.Split(".")[0] ?? ""
+                        var splittedKey = x.Split(".");
+                        return new
+                        {
+                            Field = splittedKey[1],
+                            HeaderName = splittedKey[1],
+                            TableName = splittedKey[0],
+                        };
                     }).ToList()
                 };
             }
