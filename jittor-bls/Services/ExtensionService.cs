@@ -114,5 +114,22 @@ namespace Jittor.App.Services
                 return parts.Length == 2 && columns.Any(x => x.TableName.ToLower() == parts[0].Trim().ToLower() && (x.ColumnName.ToLower() == parts[1].Trim().ToLower() || parts[1].Trim() == "*"));
             }).ToList();
         }
+        public static List<PageJoinModel> ValidateTableColumns(this List<PageJoinModel> value, List<JittorColumnInfo> columns)
+        {
+            return value.Where(item =>
+            {
+                var part1 = item.ParentTableColumn.Split('.');
+                var part2 = item.JoinTableColumn.Split('.');
+
+                bool validated = part1.Length == 2 && columns.Any(x => x.TableName.ToLower() == part1[0].Trim().ToLower() && (x.ColumnName.ToLower() == part1[1].Trim().ToLower() || part1[1].Trim() == "*"));
+                if (!validated)
+                {
+                    return validated;
+                }
+                validated = part2.Length == 2 && columns.Any(x => x.TableName.ToLower() == part2[0].Trim().ToLower() && (x.ColumnName.ToLower() == part2[1].Trim().ToLower() || part2[1].Trim() == "*"));
+                return validated;
+            }).ToList();
+        }
+
     }
 }
