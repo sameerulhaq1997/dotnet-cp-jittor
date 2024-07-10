@@ -1,6 +1,7 @@
 
 using Jittor.App.DataServices;
 using Jittor.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,11 +16,12 @@ builder.Services.AddControllers();
 
 builder.Services.AddSingleton<JittorDataServices>(provider =>
 {
+    string projectId = builder.Configuration.GetValue<string>("ProjectId");
     var repository = new FrameworkRepository("ConnectionStrings:CPConnectionString")
     {
         EnableAutoSelect = true,
     };
-    return new JittorDataServices(repository);
+    return new JittorDataServices(repository, projectId);
 });
 builder.Services.AddTransient<JittorApiService>();
 

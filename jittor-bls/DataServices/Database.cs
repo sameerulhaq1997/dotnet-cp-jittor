@@ -205,6 +205,7 @@ namespace Jittor.App.DataServices
             [Column] public string LookUpColumn { get; set; }
             [Column] public string LookUpTable { get; set; }
             [Column] public string SectionName { get; set; }
+            [Column] public string ProjectId { get; set; }
 
         }
         [TableName("JITPages")]
@@ -236,6 +237,7 @@ namespace Jittor.App.DataServices
             [Column] public string PageView { get; set; }
             [Column] public string ListingCommands { get; set; }
             [Column] public bool InsertCompulsaryFields { get; set; }
+            [Column] public string ProjectId { get; set; }
         }
 
         [TableName("JITPagesGroups")]
@@ -264,6 +266,8 @@ namespace Jittor.App.DataServices
             [Column] public string Orders { get;  set; }
             [Column] public string Joins { get;  set; }
             [Column] public int? Page { get;  set; }
+            [Column] public string ProjectId { get; set; }
+
         }
 
         [TableName("JITAttributeDisplayGroups")]

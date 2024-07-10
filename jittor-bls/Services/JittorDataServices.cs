@@ -17,8 +17,10 @@ namespace Jittor.App.Services
 	public class JittorDataServices 
 	{
         private readonly FrameworkRepository _tableContext;
-        public JittorDataServices(FrameworkRepository tableContext) {
-            _tableContext = tableContext;   
+        private readonly string _projectId;
+        public JittorDataServices(FrameworkRepository tableContext,string projectId) {
+            _tableContext = tableContext;
+            _projectId = projectId;
         }
         public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName)
         {
@@ -331,10 +333,11 @@ namespace Jittor.App.Services
             {
                 var attributeTypes = await GetAttributeTypes();
                 var tableAndChildTableColumns = await GetTableAndChildTableColumns(form.Form.TableName);
-
+                
                 using var context = DataContexts.GetJittorDataContext();
 
                 var page = JittorMapperHelper.Map<JITPage, FormPageModel>(form);
+                page.ProjectId = _projectId;
                 var pageId = context.Insert(page);
 
                 var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
@@ -348,6 +351,7 @@ namespace Jittor.App.Services
                     newTable.ListerTableName = mainTable;
                     var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
                     table.PageID = Convert.ToInt32(pageId);
+                    table.ProjectId = _projectId;
                     context.Insert(table);
                     tables.Add(table);
                 }
@@ -367,6 +371,7 @@ namespace Jittor.App.Services
                             field.CurrentColumn = currentColumn;
 
                             var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
+                            attribute.ProjectId = _projectId;
                             context.Insert(attribute);
                         }
                     }
@@ -437,8 +442,9 @@ namespace Jittor.App.Services
                     TotalItemCount = count,
                     Columns = columns.Select(x => new
                     {
-                        Field = selectColumnList.FirstOrDefault(y => y.Contains(x)),
-                        HeaderName = x
+                        Field = x,
+                        HeaderName = x,
+                        TableName = selectColumnList.FirstOrDefault(y => y.Contains(x))!.Split(".")[0] ?? ""
                     }).ToList()
                 };
             }
