@@ -17,6 +17,7 @@ namespace Jittor.App.Services
 	public class JittorDataServices 
 	{
         private readonly FrameworkRepository _tableContext;
+        private Dictionary<string, List<JittorColumnInfo>> tableColumns = new Dictionary<string, List<JittorColumnInfo>>();
         private readonly string _projectId;
         public JittorDataServices(FrameworkRepository tableContext,string projectId) {
             _tableContext = tableContext;
@@ -113,10 +114,14 @@ namespace Jittor.App.Services
         }
         public async Task<List<JittorColumnInfo>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
         {
-            return await Executor.Instance.GetDataAsync<List<JittorColumnInfo>>(() =>
+            if (tableColumns.ContainsKey(tableName))
+                return tableColumns[tableName];
+            else
             {
-                using var tableContext = _tableContext;
-                var sql = @"
+                return await Executor.Instance.GetDataAsync<List<JittorColumnInfo>>(() =>
+                {
+                    using var tableContext = _tableContext;
+                    var sql = @"
             SELECT 
                 c.TABLE_NAME AS TableName,
                 c.COLUMN_NAME AS ColumnName,
@@ -225,8 +230,9 @@ namespace Jittor.App.Services
                 )
             ORDER BY 
                 TableName, ColumnName";
-                return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
-            }, new { schemaName, tableName }, 5);
+                    return tableContext.Fetch<JittorColumnInfo>(sql, schemaName, tableName).ToList();
+                }, new { schemaName, tableName }, 5);
+            }
         }
         public async Task<List<string>> GetAllTables()
         {
@@ -392,38 +398,44 @@ namespace Jittor.App.Services
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
                 var table = context.Fetch<JITPageTable>("SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1", request.PageId).FirstOrDefault();
-
                 if (table == null)
                 {
                     return new DataListerResponse<dynamic>();
                 }
 
                 var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (table.TableName + ".*") : table.SelectColumns;
-                var sql = Sql.Builder.Append($"SELECT {selectClause} FROM {table.TableName}");
-                var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
-                var selectColumnList = selectClause.Split(',');
+                var selectColumnList = selectClause.Split(',').ToList();
 
                 var joins = table.Joins?.Split(',').Where(x => !string.IsNullOrEmpty(x)).ToList() ?? new List<string>();
+
+                request.Filters = request.Filters ?? new List<PageFilterModel>();
+                request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
+
+                string orderString = "";
+                if (table.Orders != null || request.Sort != null)
+                    orderString = request.Sort ?? (table.Orders ?? "");
+
+                var tableColumns = await GetTableAndChildTableColumns(table.TableName);
+                selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
+                request.Filters = request.Filters.ValidateTableColumns(tableColumns);
+                var orders = orderString.Split(",").ToList().ValidateTableColumns(tableColumns, true);
+
+                var sql = Sql.Builder.Append($"SELECT {string.Join(',', selectColumnList)} FROM {table.TableName}");
+                var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
+
                 foreach (var join in joins)
                 {
                     sql.Append(" " + join);
                 }
-                request.Filters = request.Filters ?? new List<PageFilterModel>();
-                request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
+
                 if (request.Filters.Count > 0)
                 {
-                    sql.Append("Where ");
-                }
-                foreach (var filter in request.Filters)
-                {
-
-                    sql = sql.BuildWhereClause(filter);
+                    sql.Append(" WHERE ");
+                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter));
                 }
 
-                if (table.Orders != null || request.Sort != null)
-                    sql.OrderBy(request.Sort ?? (table.Orders ?? ""));
-                else
-                    sql.OrderBy("ModifiedOn DESC");
+                if (orders.Count() > 0)
+                    sql.OrderBy(string.Join(',', orders));
 
                 int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
                 int offset = (request.PageNumber - 1) * pageSize;
