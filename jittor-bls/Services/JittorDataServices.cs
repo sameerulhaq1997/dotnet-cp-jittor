@@ -120,6 +120,7 @@ namespace Jittor.App.Services
         }
         public List<JittorColumnInfo> GetParentTableColumns(List<string> tableName, string? schemaName = "dbo")
         {
+
             var tablesToGet = tableName.Where(x => !tableColumns.Any(y => y.Key == x));
 
             List<JittorColumnInfo> tableColumnList = new List<JittorColumnInfo>();
@@ -177,7 +178,10 @@ namespace Jittor.App.Services
 
                 foreach (var item in newRenderedTables.GroupBy(x => x.TableName))
                 {
-                    tableColumns.Add(item.Key, item.ToList());
+                    if (!tableColumns.ContainsKey(item.Key))
+                    {
+                        tableColumns.Add(item.Key.ToLower(), item.ToList());
+                    }
                 }
             }
 
@@ -215,8 +219,8 @@ namespace Jittor.App.Services
         }
         public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)
         {
-            //return await Executor.Instance.GetDataAsync<List<FormBuilderListerModel>>(() =>
-            //{
+            return await Executor.Instance.GetDataAsync<List<FormBuilderListerModel>>(() =>
+            {
             using var context = DataContexts.GetJittorDataContext();
             var sql = PetaPoco.Sql.Builder.Append(@"SELECT p.PageName,p.UrlFriendlyName,p.Title,
                 STUFF((SELECT ', ' + t1.TableName
@@ -232,7 +236,7 @@ namespace Jittor.App.Services
                 WHERE 
                     p.PageID = @0 AND ProjectId = '" + _projectId + "'", pageId);
             return context.Fetch<FormBuilderListerModel>(sql).ToList();
-            //}, 5);
+            }, 5);
         }
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname, object ChartId)
         {
@@ -451,8 +455,8 @@ namespace Jittor.App.Services
             var parentTables = tableNodes.Where(x => x.ChildTables.Any(x => x.TableName.ToLower() == mainTable)).Select(x => x.TableName).ToList();
             foreach (var item in parentTables)
             {
-                allRelatedTableNames.Add(item);
-                var itemChildTables = GetChildTableNames("articles", tableNodes, allRelatedTableNames);
+                allRelatedTableNames.Add(item.ToLower());
+                var itemChildTables = GetChildTableNames(mainTable, tableNodes, allRelatedTableNames);
                 allRelatedTableNames.AddRange(itemChildTables);
             }
             return allRelatedTableNames;
@@ -533,9 +537,9 @@ namespace Jittor.App.Services
             var node = rootNodes.FirstOrDefault(n => n.TableName.ToLower() == nodeName);
             if (node != null)
             {
-                foreach (var node2 in node.ChildTables.Where(x => excludeTables != null ? !excludeTables.Contains(x.TableName) : true))
+                foreach (var node2 in node.ChildTables.Where(x => excludeTables != null ? !excludeTables.Contains(x.TableName.ToLower()) : true))
                 {
-                    childTableNames.Add(node2.TableName);
+                    childTableNames.Add(node2.TableName.ToLower());
                     GetChildTableNames(node2.TableName, node2.ChildTables)
                         .ForEach(t => childTableNames.Add(t));
                 }
