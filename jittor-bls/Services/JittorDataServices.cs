@@ -38,7 +38,7 @@ namespace Jittor.App.Services
                 var sql = PetaPoco.Sql.Builder
                     .Select(" * ")
                     .From(" JITPages ")
-                    .Where(" UrlFriendlyName = @0 AND ProjectId = @1", urlFriendlyPageName, _projectId);
+                    .Where($" UrlFriendlyName = @0 AND ProjectId = '{_projectId}'", urlFriendlyPageName);
                 model = context.Fetch<JittorPageModel>(sql).FirstOrDefault();
                 if (model != null)
                 {
@@ -214,9 +214,30 @@ namespace Jittor.App.Services
             return await Executor.Instance.GetDataAsync<List<JITPage>>(() =>
             {
                 using var context = DataContexts.GetJittorDataContext();
-                var sql = "Select * from JITPages Where ProjectId = '@0'";
-                return context.Fetch<JITPage>(sql, _projectId).ToList();
+                var sql = ($"Select * from JITPages Where ProjectId = '{_projectId}'");
+                return context.Fetch<JITPage>(sql).ToList();
             }, 5);
+        }
+        public async Task<bool> DeleteForm(int pageID)
+        {
+            try
+            {
+                using var context = DataContexts.GetJittorDataContext();
+                using (var tr = context.GetTransaction())
+                {
+
+                    var res = context.Execute($"Delete From JITPageAttributes Where PageID = @0", pageID);
+                    res = context.Execute($"Delete From JITPageTables Where PageID = @0", pageID);
+                    res = context.Execute($"Delete From JITPages Where PageID = @0", pageID);
+
+                    tr.Complete();
+                    return true;
+                }
+            } 
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
         public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)
         {

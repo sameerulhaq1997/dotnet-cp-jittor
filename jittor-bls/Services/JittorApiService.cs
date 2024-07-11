@@ -209,6 +209,11 @@ namespace Jittor.App.Services
                 return new ResponseModel() { Result = "Failed", Message = e.Message, Page = pageName, Data = results, Created = 0, Updared = 0 };
             }
         }
+        public async Task<bool> DeleteForm(int pageID)
+        {
+            var res = await _jittorDataServices.DeleteForm(pageID);
+            return res;
+        }
         public async Task<ResponseModel> pageId(jitterDeleteModel ID, int PageID)
         {
             var results = new List<List<dynamic>>();

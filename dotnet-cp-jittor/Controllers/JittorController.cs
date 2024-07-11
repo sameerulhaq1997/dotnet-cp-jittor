@@ -103,6 +103,12 @@ namespace Jittor.Api.Controllers
             var jitorTableModel = await _jittorService.GetAllPages();
             return Ok(jitorTableModel);
         }
+        [HttpPost("page/deleteForm/{pageID}")]
+        public async Task<IActionResult> DeleteForm(int pageID)
+        {
+            var res = await _jittorService.DeleteForm(pageID);
+            return Ok(res);
+        }
 
     }
 }
