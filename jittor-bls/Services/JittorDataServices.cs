@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System;
 using Newtonsoft.Json.Linq;
+using System.Transactions;
 
 namespace Jittor.App.Services
 {
@@ -301,49 +302,51 @@ namespace Jittor.App.Services
                 var tableAndChildTableColumns = GetTableAndChildTableColumns(form.Form.TableName);
 
                 using var context = DataContexts.GetJittorDataContext();
-
-                var page = JittorMapperHelper.Map<JITPage, FormPageModel>(form);
-                page.ProjectId = _projectId;
-                var pageId = context.Insert(page);
-
-                var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
-                List<JITPageTable> tables = new List<JITPageTable>();
-                var mainTable = form.Form.TableName;
-
-                foreach (var item in tableNames)
+                using (var tr = context.GetTransaction())
                 {
-                    var newTable = form.Form;
-                    newTable.TableName = item;
-                    newTable.ListerTableName = mainTable;
-                    var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
-                    table.PageID = Convert.ToInt32(pageId);
-                    table.ProjectId = _projectId;
-                    context.Insert(table);
-                    tables.Add(table);
-                }
+                    var page = JittorMapperHelper.Map<JITPage, FormPageModel>(form);
+                    page.ProjectId = _projectId;
+                    var pageId = context.Insert(page);
 
+                    var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
+                    List<JITPageTable> tables = new List<JITPageTable>();
+                    var mainTable = form.Form.TableName;
 
-                foreach (var section in form.Sections)
-                {
-                    foreach (var field in section.Fields)
+                    foreach (var item in tableNames)
                     {
-                        var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
-                        if (currentColumn != null)
-                        {
-                            var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
-                            field.AttributeTypeId = attributeType?.AttributeTypeID ?? 0;
-                            field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
-                            field.PageId = page.PageID;
-                            field.CurrentColumn = currentColumn;
+                        var newTable = form.Form;
+                        newTable.TableName = item;
+                        newTable.ListerTableName = mainTable;
+                        var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
+                        table.PageID = Convert.ToInt32(pageId);
+                        table.ProjectId = _projectId;
+                        context.Insert(table);
+                        tables.Add(table);
+                    }
 
-                            var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
-                            attribute.ProjectId = _projectId;
-                            context.Insert(attribute);
+                    foreach (var section in form.Sections)
+                    {
+                        foreach (var field in section.Fields)
+                        {
+                            var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
+                            if (currentColumn != null)
+                            {
+                                var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
+                                field.AttributeTypeId = attributeType?.AttributeTypeID ?? 0;
+                                field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
+                                field.PageId = page.PageID;
+                                field.CurrentColumn = currentColumn;
+
+                                var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
+                                attribute.ProjectId = _projectId;
+                                context.Insert(attribute);
+                            }
                         }
                     }
+                    tr.Complete();
                 }
-                // context.Insert(attributes);
                 return true;
+                
             }
             catch (Exception e)
             {
