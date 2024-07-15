@@ -28,6 +28,10 @@ namespace Jittor.App.Services
             _projectId = projectId;
             GetAllTableStructures();
         }
+        public List<TableNode> getTableNodes()
+        {
+            return tableNodes;
+        }
         public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName)
         {
             List<JITAttributeType> types = await GetAttributeTypes();
