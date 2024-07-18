@@ -84,7 +84,7 @@ namespace Jittor.App.Models
     }
     public class FieldValue
     {
-        public dynamic ActualValue { get; set; }
+        public dynamic? ActualValue { get; set; }
         public ApplicationValueTypeEnum ValueType { get; set; }
     }
     public class FieldAction
