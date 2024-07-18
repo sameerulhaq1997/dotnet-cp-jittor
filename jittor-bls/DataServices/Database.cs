@@ -204,9 +204,9 @@ namespace Jittor.App.DataServices
             [Column] public string HasLookUpData { get; set; }
             [Column] public string LookUpColumn { get; set; }
             [Column] public string LookUpTable { get; set; }
-            [Column] public string SectionName { get; set; }
             [Column] public string ProjectId { get; set; }
-
+            [Column] public string SectionDetails { get; set; }
+            [Column] public string ExtraFields { get; set; }
         }
         [TableName("JITPages")]
         [PrimaryKey("PageID")]

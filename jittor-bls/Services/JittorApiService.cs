@@ -2,6 +2,7 @@
 using Jittor.App.Helpers;
 using Jittor.App.Models;
 using Jittor.Shared.Enums;
+using Newtonsoft.Json;
 using PetaPoco;
 using System.Reflection.Emit;
 using static Jittor.App.DataServices.FrameworkRepository;
@@ -32,6 +33,7 @@ namespace Jittor.App.Services
             formSection.IsVisible = true;
             formSection.Fields = new List<FieldModel>();
             formSection.Fields.AddRange(JittorMapperHelper.MapList<FieldModel, JITPageAttribute>(res.PageAttributes));
+            formSection.Fields.ForEach(x => x.Validations = string.IsNullOrEmpty(x.ValidationString) ? null : JsonConvert.DeserializeObject<Dictionary<string, string>>(x.ValidationString));
             formPageModel.Sections.Add(formSection);
 
             return formPageModel;
@@ -66,7 +68,7 @@ namespace Jittor.App.Services
                     ActualValue = column.DefaultValue,
                     ValueType = column.DataType.GetApplicationValueTypeEnum()
                 };
-                field.Validations = new Dictionary<string, object>();
+                field.Validations = new Dictionary<string, string>();
                 if (column.IsNullable == "YES")
                     field.Validations.Add("required", "true");
                 if (column.MaxLength > 0)
@@ -294,9 +296,9 @@ namespace Jittor.App.Services
             }
             return result ? "ok" : "error";
         }
-        public async Task<DataListerResponse<dynamic>> GetPageLister(DataListerRequest request)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request)
         {
-            var res = await _jittorDataServices.GetPageLister(request);
+            var res = _jittorDataServices.GetPageLister(request);
             return res;
         }
         public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)

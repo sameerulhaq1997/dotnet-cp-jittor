@@ -361,7 +361,7 @@ namespace Jittor.App.Services
                                 field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
                                 field.PageId = page.PageID;
                                 field.CurrentColumn = currentColumn;
-
+                                field.ValidationString = field.Validations != null ? JsonConvert.SerializeObject(field.Validations) : "";
                                 var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
                                 attribute.ProjectId = _projectId;
                                 context.Insert(attribute);
@@ -379,7 +379,7 @@ namespace Jittor.App.Services
                 return false;
             }
         }
-        public async Task<DataListerResponse<dynamic>?> GetPageLister(DataListerRequest request)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request)
         {
             try
             {
@@ -441,6 +441,8 @@ namespace Jittor.App.Services
 
                 if (orders.Count() > 0)
                     sql.OrderBy(string.Join(',', orders));
+                else
+                    sql.OrderBy((tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " DESC ");
 
                 int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
                 int offset = (request.PageNumber - 1) * pageSize;
@@ -476,7 +478,8 @@ namespace Jittor.App.Services
             }
         }
 
-        public List<string> GetAllRelatedTables(string mainTable)
+        #region Db Structure
+        private List<string> GetAllRelatedTables(string mainTable)
         {
             mainTable = mainTable.ToLower();
             List<string> allRelatedTableNames = new List<string>() { mainTable };
@@ -491,7 +494,7 @@ namespace Jittor.App.Services
             }
             return allRelatedTableNames;
         }
-        public void GetAllTableStructures()
+        private void GetAllTableStructures()
         {
             var relationships = _tableContext.Fetch<TableRelationship>(@"
     SELECT 
@@ -540,7 +543,6 @@ namespace Jittor.App.Services
                 Console.WriteLine($"Table: {node.TableName}, Child Count: {node.ChildTables.Count}");
             }
         }
-
         private static void BuildTableTree(string parentTable, List<TableRelationship> relationships, Dictionary<string, TableNode> tableDict, HashSet<string> visited)
         {
             if (visited.Contains(parentTable))
@@ -560,8 +562,7 @@ namespace Jittor.App.Services
                 BuildTableTree(rel.ChildTable, relationships, tableDict, visited);
             }
         }
-
-        public static List<string> GetChildTableNames(string nodeName, List<TableNode> rootNodes, List<string>? excludeTables = null)
+        private static List<string> GetChildTableNames(string nodeName, List<TableNode> rootNodes, List<string>? excludeTables = null)
         {
             var childTableNames = new List<string>();
             var node = rootNodes.FirstOrDefault(n => n.TableName.ToLower() == nodeName);
@@ -576,6 +577,7 @@ namespace Jittor.App.Services
             }
             return childTableNames;
         }
+        #endregion
     }
     public class TableRelationship
     {

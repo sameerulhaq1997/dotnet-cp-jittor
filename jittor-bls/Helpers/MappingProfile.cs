@@ -79,14 +79,14 @@ namespace Jittor.App.Helpers
                 .ForMember(dest => dest.DisplayNameEn, opt => opt.MapFrom(src => src.LabelEn))
                 .ForMember(dest => dest.AttributeTypeID, opt => opt.MapFrom(src => src.AttributeTypeId))
                 .ForMember(dest => dest.IsRequired, opt => opt.MapFrom(src => src.Validations.ContainsKey("required")))
-                .ForMember(dest => dest.IsForeignKey, opt => opt.MapFrom(src => src.CurrentColumn.IsForeignKey))
+                .ForMember(dest => dest.IsForeignKey, opt => opt.MapFrom(src => src.CurrentColumn!.IsForeignKey))
                 .ForMember(dest => dest.ParentTableName, opt => opt.MapFrom(src => src.ParentTableName))
                 .ForMember(dest => dest.ParentTableNameColumn, opt => opt.MapFrom(src => src.ParentTableNameColumn))
                 .ForMember(dest => dest.ParentCondition, opt => opt.MapFrom(src => src.ParentCondition))
                 .ForMember(dest => dest.AutoComplete, opt => opt.MapFrom(src => false))
-                .ForMember(dest => dest.ValidationExpression, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.Validations)))
-                .ForMember(dest => dest.IsAutoIncreament, opt => opt.MapFrom(src => src.CurrentColumn.IsAutoIncrement))
-                .ForMember(dest => dest.IsPrimaryKey, opt => opt.MapFrom(src => src.CurrentColumn.IsPrimaryKey))
+                .ForMember(dest => dest.ValidationExpression, opt => opt.MapFrom(src => src.ValidationString))
+                .ForMember(dest => dest.IsAutoIncreament, opt => opt.MapFrom(src => src.CurrentColumn!.IsAutoIncrement))
+                .ForMember(dest => dest.IsPrimaryKey, opt => opt.MapFrom(src => src.CurrentColumn!.IsPrimaryKey))
                 .ForMember(dest => dest.Editable, opt => opt.MapFrom(src => !src.IsDisabled))
                 .ForMember(dest => dest.Searchable, opt => opt.MapFrom(src => src.SearchableSeqNo > 0))
                 .ForMember(dest => dest.Displayable, opt => opt.MapFrom(src => src.IsVisible))
@@ -95,10 +95,11 @@ namespace Jittor.App.Helpers
                 .ForMember(dest => dest.EditableSeqNo, opt => opt.MapFrom(src => src.DisplayableSeqNo))
                 .ForMember(dest => dest.SearchableSeqNo, opt => opt.MapFrom(src => src.SearchableSeqNo))
                 .ForMember(dest => dest.DisplayableSeqNo, opt => opt.MapFrom(src => src.DisplayableSeqNo))
-                .ForMember(dest => dest.MaxLength, opt => opt.MapFrom(src => src.Validations.ContainsKey("maxLenth") ? int.Parse(src.Validations.FirstOrDefault(x => x.Key == "maxLenth").Value.ToString() ?? "0") : src.CurrentColumn.MaxLength))
+                .ForMember(dest => dest.MaxLength, opt => opt.MapFrom(src => src.Validations.ContainsKey("maxLenth") ? int.Parse(src.Validations.FirstOrDefault(x => x.Key == "maxLenth").Value.ToString() ?? "0") : src.CurrentColumn!.MaxLength))
                 .ForMember(dest => dest.PlaceholderText, opt => opt.MapFrom(src => src.PlaceholderEn))
                 .ForMember(dest => dest.DisplayGroupID, opt => opt.MapFrom(src => 1))
-                .ForMember(dest => dest.DisplayStyle, opt => opt.MapFrom(src => "default")).ReverseMap();
+                .ForMember(dest => dest.DisplayStyle, opt => opt.MapFrom(src => "default"))
+                .ReverseMap();
         }
 
     }

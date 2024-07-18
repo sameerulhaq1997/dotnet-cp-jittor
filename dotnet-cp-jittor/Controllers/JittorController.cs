@@ -59,13 +59,12 @@ namespace Jittor.Api.Controllers
             return Ok(res);
         }
         [HttpGet("page/lister/{pageId}")]
-        public async Task<IActionResult> GetPageLister(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
+        public IActionResult GetPageLister(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
         {
             try
             {
                 Request.Headers.TryGetValue("filters", out StringValues filtersString);
                 var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
-                //var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<Dictionary<string, string>?>(filtersString.ToString())) : null;
 
                 var request = new DataListerRequest()
                 {
@@ -75,7 +74,7 @@ namespace Jittor.Api.Controllers
                     Sort = sort,
                     Filters = filters
                 };
-                var res = await _jittorService.GetPageLister(request);
+                var res = _jittorService.GetPageLister(request);
                 return Ok(res);
             }
             catch(Exception ex)

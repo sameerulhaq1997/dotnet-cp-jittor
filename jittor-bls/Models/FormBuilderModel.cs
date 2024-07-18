@@ -51,7 +51,8 @@ namespace Jittor.App.Models
         public ApplicationFieldSubTypeEnum FieldSubType { get; set; }
         public FieldValue InpValue { get; set; }
         public List<FieldOption> Options { get; set; }
-        public Dictionary<string, object> Validations { get; set; }
+        public Dictionary<string, string>? Validations { get; set; }
+        public string? ValidationString { get; set; }
         public List<FieldAction> Actions { get; set; }
         public string TableName { get; set; }
         public string LabelAr { get; set; }
@@ -72,7 +73,7 @@ namespace Jittor.App.Models
         public FieldModel()
         {
             Options = new List<FieldOption>();
-            Validations = new Dictionary<string, object>();
+            Validations = new Dictionary<string, string>();
             Actions = new List<FieldAction>();
         }
     }
