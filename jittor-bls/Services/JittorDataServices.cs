@@ -379,7 +379,7 @@ namespace Jittor.App.Services
                 return false;
             }
         }
-        public async Task<DataListerResponse<dynamic>> GetPageLister(DataListerRequest request)
+        public async Task<DataListerResponse<dynamic>?> GetPageLister(DataListerRequest request)
         {
             try
             {
@@ -399,7 +399,8 @@ namespace Jittor.App.Services
                 var joins = JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
 
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
-                request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
+                if(!string.IsNullOrEmpty(table.Filters))
+                    request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
 
                 string orderString = "";
                 if (table.Orders != null || request.Sort != null)
@@ -408,7 +409,7 @@ namespace Jittor.App.Services
                 var tableColumns = GetTableAndChildTableColumns(table.TableName);
                 selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
                 request.Filters = request.Filters.ValidateTableColumns(tableColumns);
-                var orders = orderString.Split(",").ToList().ValidateTableColumns(tableColumns, true);
+                var orders = orderString.Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList().ValidateTableColumns(tableColumns, true);
 
                 if (selectColumnList.Any(x => x.Contains("*")))
                 {
@@ -470,6 +471,7 @@ namespace Jittor.App.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return null;
             }
         }
