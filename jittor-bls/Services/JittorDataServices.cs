@@ -395,7 +395,6 @@ namespace Jittor.App.Services
                 var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (table.TableName + ".*") : table.SelectColumns;
                 var selectColumnList = selectClause.Split(',').ToList();
 
-                //var joins = table.Joins?.Split(',').Where(x => !string.IsNullOrEmpty(x)).ToList() ?? new List<string>();
                 var joins = JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
 
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
@@ -418,8 +417,8 @@ namespace Jittor.App.Services
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
 
-
-                var sql = Sql.Builder.Append($"SELECT {string.Join(',', selectColumnList)} FROM {table.TableName}");
+                var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName}");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)
                 {
@@ -453,6 +452,7 @@ namespace Jittor.App.Services
                 if (list.Count > 0)
                     columns = ((IDictionary<string, object>)list[0]).Keys.ToList();
 
+                selectColumnList.Add(table.TableName + ".id");
                 return new DataListerResponse<dynamic>()
                 {
                     Items = list,
@@ -467,6 +467,7 @@ namespace Jittor.App.Services
                             Field = splittedKey[1],
                             HeaderName = splittedKey[1],
                             TableName = splittedKey[0],
+                            Hideable= splittedKey[1] == "id" ? false : true,
                         };
                     }).ToList()
                 };
