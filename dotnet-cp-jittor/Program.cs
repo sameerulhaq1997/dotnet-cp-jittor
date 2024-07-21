@@ -1,8 +1,8 @@
 
 using Jittor.App.DataServices;
 using Jittor.App.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +26,15 @@ builder.Services.AddSingleton<JittorDataServices>(provider =>
 builder.Services.AddTransient<JittorApiService>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("SwaggerApi", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Swagger API",
+        Description = "A simple example ASP.NET Core Web API"
+    });
+});
 
 builder.Services.AddCors(options =>
 {
@@ -43,11 +51,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/SwaggerApi/swagger.json", "Swagger API");
+});
 app.UseCors("CORS_Everyone");
 app.UseHttpsRedirection();
 
