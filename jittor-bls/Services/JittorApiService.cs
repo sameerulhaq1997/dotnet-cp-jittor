@@ -67,8 +67,8 @@ namespace Jittor.App.Services
 
                 field.IsDisabled = false;
                 field.IsVisible = true;
-                field.FieldType = splittedColumnDescription.Length > 0 ? splittedColumnDescription[0].ParseEnum<ApplicationFieldTypeEnum>() : ApplicationFieldTypeEnum.INPUT;
-                field.FieldSubType = splittedColumnDescription.Length > 1 ? splittedColumnDescription[1].ParseEnum<ApplicationFieldSubTypeEnum>() : ApplicationFieldSubTypeEnum.TEXT;
+                field.FieldType = column.DataType.GetApplicationFieldTypeEnum();
+                field.FieldSubType = column.DataType.GetApplicationFieldSubTypeEnum();
                 field.InpValue = new FieldValue()
                 {
                     ActualValue = column.DefaultValue,

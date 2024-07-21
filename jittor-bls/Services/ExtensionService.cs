@@ -39,6 +39,82 @@ namespace Jittor.App.Services
                     return ApplicationValueTypeEnum.OBJECT;
             }
         }
+        public static ApplicationFieldSubTypeEnum GetApplicationFieldSubTypeEnum(this string sqlType)
+        {
+            switch (sqlType.ToLower())
+            {
+                case "varchar":
+                case "nvarchar":
+                case "char":
+                case "nchar":
+                case "text":
+                case "ntext":
+                    return ApplicationFieldSubTypeEnum.TEXT;
+
+                case "int":
+                case "bigint":
+                case "smallint":
+                case "tinyint":
+                case "decimal":
+                case "numeric":
+                case "float":
+                case "real":
+                    return ApplicationFieldSubTypeEnum.NUMBER;
+
+                case "date":
+                    return ApplicationFieldSubTypeEnum.DATE;
+
+                case "datetime":
+                case "datetime2":
+                case "smalldatetime":
+                    return ApplicationFieldSubTypeEnum.DATE_TIME;
+
+                case "time":
+                    return ApplicationFieldSubTypeEnum.TIME;
+
+                case "bit":
+                    return ApplicationFieldSubTypeEnum.SINGLE;
+
+                default:
+                    return ApplicationFieldSubTypeEnum.TEXT;
+            }
+        }
+
+        public static ApplicationFieldTypeEnum GetApplicationFieldTypeEnum(this string sqlType)
+        {
+            switch (sqlType.ToLower())
+            {
+                case "varchar":
+                case "nvarchar":
+                case "char":
+                case "nchar":
+                case "text":
+                case "ntext":
+                case "int":
+                case "bigint":
+                case "smallint":
+                case "tinyint":
+                case "decimal":
+                case "numeric":
+                case "float":
+                case "real":
+                    return ApplicationFieldTypeEnum.INPUT;
+
+                case "date":
+                case "datetime":
+                case "datetime2":
+                case "smalldatetime":
+                case "time":
+                    return ApplicationFieldTypeEnum.DATE_TIME;
+
+                case "bit":
+                    return ApplicationFieldTypeEnum.CHECKBOX;
+
+                default:
+                    return ApplicationFieldTypeEnum.INPUT;
+            }
+        }
+
         public static T ParseEnum<T>(this string value)
         {
             return (T)Enum.Parse(typeof(T), value);
