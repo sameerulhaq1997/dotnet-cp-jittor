@@ -28,9 +28,9 @@ namespace Jittor.Api.Controllers
             return Ok(jitorPageModel);
         }
         [HttpPost("form-builder")]
-        public async Task<IActionResult> SavePage([FromBody] FormPageModel form)
+        public async Task<IActionResult> SavePage([FromBody] FormPageModel form, int? pageID = null)
         {
-            var jitorPageModel = await _jittorService.CreateNewPage(form);
+            var jitorPageModel = await _jittorService.CreateNewPage(form, pageID);
             return Ok(jitorPageModel);
         }
         [HttpGet("colums/{tableName}")]

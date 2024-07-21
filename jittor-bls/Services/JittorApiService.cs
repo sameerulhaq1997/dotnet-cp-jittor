@@ -100,9 +100,9 @@ namespace Jittor.App.Services
             var pages = await _jittorDataServices.GetAllPages();
             return pages;
         }
-        public async Task<bool> CreateNewPage(FormPageModel form)
+        public async Task<bool> CreateNewPage(FormPageModel form, int? pageID)
         {
-            return await _jittorDataServices.CreateNewPage(form);
+            return await _jittorDataServices.CreateNewPage(form, pageID);
         }
         public async Task<ResponseModel> ProcessEntity(Dictionary<string, object> keyValuePairs, string pageName)
         {
