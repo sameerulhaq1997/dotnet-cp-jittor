@@ -234,13 +234,16 @@ namespace Jittor.App.Models
                     {
                         if (att.IsPrimaryKey)
                         {
-                            if (keyValuePairs[att.AttributeName] != null)
+                            if (keyValuePairs[att.AttributeName] != null && keyValuePairs.TryGetValue(att.AttributeName, out var value))
                             {
-                                entity.PrimaryValues = entity.PrimaryValues ?? new Dictionary<string, object>();
-                                entity.PrimaryValues.Add(att.AttributeName, keyValuePairs[att.AttributeName]);
-                                entity.ValidToUpdate = true;
-                                entity.ValidToCreate = false;
-                                entity.ValidToDelete = model.DeleteRecord && string.IsNullOrEmpty(model.SoftDeleteColumn);
+                                if (value is int intValue && intValue != 0)
+                                {
+                                    entity.PrimaryValues = entity.PrimaryValues ?? new Dictionary<string, object>();
+                                    entity.PrimaryValues.Add(att.AttributeName, keyValuePairs[att.AttributeName]);
+                                    entity.ValidToUpdate = true;
+                                    entity.ValidToCreate = false;
+                                    entity.ValidToDelete = model.DeleteRecord && string.IsNullOrEmpty(model.SoftDeleteColumn);
+                                }
                             }
                         }
                         else

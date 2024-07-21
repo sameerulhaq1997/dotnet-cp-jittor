@@ -67,8 +67,8 @@ namespace Jittor.App.Services
 
                 field.IsDisabled = false;
                 field.IsVisible = true;
-                field.FieldType = splittedColumnDescription.Length > 0 ? splittedColumnDescription[0].ParseEnum<ApplicationFieldTypeEnum>() : ApplicationFieldTypeEnum.INPUT;
-                field.FieldSubType = splittedColumnDescription.Length > 1 ? splittedColumnDescription[1].ParseEnum<ApplicationFieldSubTypeEnum>() : ApplicationFieldSubTypeEnum.TEXT;
+                field.FieldType = column.DataType.GetApplicationFieldTypeEnum();
+                field.FieldSubType = column.DataType.GetApplicationFieldSubTypeEnum();
                 field.InpValue = new FieldValue()
                 {
                     ActualValue = column.DefaultValue,
@@ -100,9 +100,9 @@ namespace Jittor.App.Services
             var pages = await _jittorDataServices.GetAllPages();
             return pages;
         }
-        public async Task<bool> CreateNewPage(FormPageModel form)
+        public async Task<bool> CreateNewPage(FormPageModel form, int? pageID)
         {
-            return await _jittorDataServices.CreateNewPage(form);
+            return await _jittorDataServices.CreateNewPage(form, pageID);
         }
         public async Task<ResponseModel> ProcessEntity(Dictionary<string, object> keyValuePairs, string pageName)
         {

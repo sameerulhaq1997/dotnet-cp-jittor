@@ -234,6 +234,7 @@ namespace Jittor.App.Services
 
                     var res = context.Execute($"Delete From JITPageAttributes Where PageID = @0", pageID);
                     res = context.Execute($"Delete From JITPageTables Where PageID = @0", pageID);
+                    res = context.Execute($"Delete From JITPageSections Where PageID = @0", pageID);
                     res = context.Execute($"Delete From JITPages Where PageID = @0", pageID);
 
                     tr.Complete();
@@ -321,7 +322,7 @@ namespace Jittor.App.Services
                 }
             }
         }
-        public async Task<bool> CreateNewPage(FormPageModel form)
+        public async Task<bool> CreateNewPage(FormPageModel form, int? pageID)
         {
             try
             {
@@ -334,52 +335,69 @@ namespace Jittor.App.Services
                     form.ProjectId = _projectId;
                     var page = JittorMapperHelper.Map<JITPage, FormPageModel>(form);
                     page.ProjectId = _projectId;
-                    var pageId = context.Insert(page);
 
-                    var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
-                    List<JITPageTable> tables = new List<JITPageTable>();
-                    var mainTable = form.Form.TableName;
-
-                    foreach (var item in tableNames)
+                    if (pageID != null)
                     {
-                        var newTable = form.Form;
-                        newTable.TableName = item;
-                        newTable.ListerTableName = mainTable;
-                        newTable.PageID = Convert.ToInt32(pageId);
-                        newTable.ProjectId = _projectId;
-                        newTable.ForView = mainTable == item;
-
-                        var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
-                        table.PageID = Convert.ToInt32(pageId);
-                        table.ProjectId = _projectId;
-                        context.Insert(table);
-                        tables.Add(table);
-                    }
-
-                    foreach (var section in form.Sections)
-                    {
-                        section.ProjectId = _projectId;
-                        section.PageID = Convert.ToInt32(pageId);
-                        var sectionDb = JittorMapperHelper.Map<JITPageSection, FormSection>(section);
-                        context.Insert(sectionDb);
-                        foreach (var field in section.Fields)
+                        string sql = @"Select PageName from JITPages Where PageID = @0";//JITPage Update
+                        var pageResult = context.Query<dynamic>(sql, pageID);
+                        if (pageResult.Any())
                         {
-                            var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
-                            if (currentColumn != null)
+                            page.PageID = (int)pageID;
+                            context.Update(page);
+                        }
+                        var res = context.Execute($"Delete From JITPageAttributes Where PageID = @0", pageID);
+                        res = context.Execute($"Delete From JITPageTables Where PageID = @0", pageID);
+                        res = context.Execute($"Delete From JITPageSections Where PageID = @0", pageID);
+
+                    }
+                    else
+                    {
+                        context.Insert(page);
+                    }
+                        var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
+                        List<JITPageTable> tables = new List<JITPageTable>();
+                        var mainTable = form.Form.TableName;
+
+                        foreach (var item in tableNames) //Insert Page Tables
+                        {
+                            var newTable = form.Form;
+                            newTable.TableName = item;
+                            newTable.ListerTableName = mainTable;
+                            newTable.PageID = Convert.ToInt32(page.PageID);
+                            newTable.ProjectId = _projectId;
+                            newTable.ForView = mainTable == item;
+
+                            var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
+                            table.PageID = Convert.ToInt32(page.PageID);
+                            table.ProjectId = _projectId;
+                            context.Insert(table);
+                            tables.Add(table);
+                        }
+
+                        foreach (var section in form.Sections) //Insert PageSections
+                        {
+                            section.ProjectId = _projectId;
+                            section.PageID = Convert.ToInt32(page.PageID);
+                            var sectionDb = JittorMapperHelper.Map<JITPageSection, FormSection>(section);
+                            context.Insert(sectionDb);
+                            foreach (var field in section.Fields) //Insert PageAttributes
                             {
-                                var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
-                                field.AttributeTypeId = attributeType?.AttributeTypeID ?? 0;
-                                field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
-                                field.PageId = page.PageID;
-                                field.CurrentColumn = currentColumn;
-                                field.SectionId = sectionDb.PageSectionId;
-                                field.ProjectId = _projectId;
-                                var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
-                                attribute.ProjectId = _projectId;
-                                context.Insert(attribute);
+                                var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
+                                if (currentColumn != null)
+                                {
+                                    var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
+                                    field.AttributeTypeId = attributeType?.AttributeTypeID ?? 0;
+                                    field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
+                                    field.PageId = page.PageID;
+                                    field.CurrentColumn = currentColumn;
+                                    field.SectionId = sectionDb.PageSectionId;
+                                    field.ProjectId = _projectId;
+                                    var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
+                                    attribute.ProjectId = _projectId;
+                                    context.Insert(attribute);
+                                }
                             }
                         }
-                    }
                     tr.Complete();
                 }
                 return true;
