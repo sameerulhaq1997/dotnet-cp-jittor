@@ -73,15 +73,14 @@ namespace Jittor.App.Models
     {
         public string TableName { get; set; } = string.Empty;
         public List<JITPageAttribute> TableAttributes { get; set; } = new List<JITPageAttribute>();
-        public Dictionary<string, object> OtherValues { get; set; } = new Dictionary<string, object>();
-        public List<Dictionary<string, object>> ChildValues { get; set; } = new List<Dictionary<string, object>>();
-        public Dictionary<string, object>? PrimaryValues { get; set; }
+        public List<Dictionary<string, object>> OtherValues { get; set; } = new List<Dictionary<string, object>>();
+        public List<Dictionary<string, object>>? PrimaryValues { get; set; }
         public bool ValidToCreate { get; set; } = false;
         public bool ValidToUpdate { get; set; } = false;
         public bool ValidToDelete { get; set; } = false;
         public List<JITAttributeType> AttributeTypes { get; set; } = new List<JITAttributeType>();
         public bool InsertCompulsaryFields { get; set; }
-        public Dictionary<string, object> ForeignKeyValues { get; set; }
+        public List<Dictionary<string, object>> ForeignKeyValues { get; set; }
         public string InsertCommand
         {
             get
@@ -91,12 +90,8 @@ namespace Jittor.App.Models
                     return String.Empty; // Not valid to create !!!
                 }
 
-                var values = this.ChildValues;
-                if(this.OtherValues.Count > 0)
-                    values.Add(this.OtherValues);
-
                 StringBuilder sb = new StringBuilder();
-                foreach (var item in values)
+                foreach (var item in this.OtherValues)
                 {
                     string[] attribs = item.Keys.Select(x => x).ToArray();
                     var parameters = Enumerable.Range(0, attribs.Length).Select(x => $"@{x}");
@@ -125,14 +120,14 @@ namespace Jittor.App.Models
                 StringBuilder sb = new StringBuilder();
                 if (this.ValidToCreate)
                 {
-                    string[] attribs = this.OtherValues.Keys.Select(x => x).ToArray();
+                    string[] attribs = this.OtherValues.FirstOrDefault()!.Keys.Select(x => x).ToArray();
                     var parameters = Enumerable.Range(0, attribs.Length).Select(x => $"{attribs[x]} = @{x}");
                     sb.Append($"Select * From {this.TableName} Where {string.Join(" And ", parameters)}");
                 }
                 else if (this.PrimaryValues != null)
                 {
-                    string[] attribs = this.OtherValues.Keys.Select((x, i) => $"{x} = @{i}").ToArray();
-                    string[] whClaus = this.PrimaryValues.Keys.Select((x, i) => $"{x} = @{i + attribs.Length}").ToArray();
+                    string[] attribs = this.OtherValues.FirstOrDefault()!.Keys.Select((x, i) => $"{x} = @{i}").ToArray();
+                    string[] whClaus = this.PrimaryValues.FirstOrDefault()!.Keys.Select((x, i) => $"{x} = @{i + attribs.Length}").ToArray();
                     sb.Append($"Select * From {this.TableName} Where {string.Join(" AND ", whClaus)}");
                 }
                 return sb.ToString();
@@ -148,10 +143,14 @@ namespace Jittor.App.Models
                     return String.Empty; //Not valid to create !!!
                 }
                 StringBuilder sb = new StringBuilder();
-                string[] attribs = this.OtherValues.Keys.Select((x, i) => $"{x} = @{i}").ToArray();
-                string[] whClaus = this.PrimaryValues.Keys.Select((x, i) => $"{x} = @{i + attribs.Length}").ToArray();
-                sb.AppendLine($"Update {this.TableName} Set {string.Join(",", attribs)} ");
-                sb.AppendLine($"Where {string.Join(" AND ", whClaus)}");
+                foreach (var item in this.OtherValues)
+                {
+                    var index = this.OtherValues.IndexOf(item);
+                    string[] attribs = item.Keys.Select((x, i) => $"{x} = @{i}").ToArray();
+                    string[] whClaus = this.PrimaryValues[index].Keys.Select((x, i) => $"{x} = @{i + attribs.Length}").ToArray();
+                    sb.AppendLine($"Update {this.TableName} Set {string.Join(",", attribs)} ");
+                    sb.AppendLine($"Where {string.Join(" AND ", whClaus)}");
+                }
                 return sb.ToString();
             }
         }
@@ -160,15 +159,16 @@ namespace Jittor.App.Models
             get
             {
                 List<object> list = new List<object>();
-                foreach (var item in this.ChildValues)
+                foreach (var item in this.OtherValues)
                 {
+                    var index = this.OtherValues.IndexOf(item);
                     foreach (var key in item.Keys)
                     {
                         var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
                         var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                        if (ForeignKeyValues.ContainsKey(key))
+                        if (ForeignKeyValues[index].ContainsKey(key))
                         {
-                            list.Add(ForeignKeyValues[key]);
+                            list.Add(ForeignKeyValues[index][key]);
                         }
                         else if (item[key] == null)
                         {
@@ -201,34 +201,40 @@ namespace Jittor.App.Models
             {
                 List<object> list = new List<object>();
 
-                foreach (var key in this.OtherValues.Keys)
+                foreach (var item in this.OtherValues)
                 {
-                    var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
-                    var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                    if (ForeignKeyValues.ContainsKey(key))
-                    {
-                        list.Add(ForeignKeyValues[key]);
-                    }
-                    else if (OtherValues[key] == null)
-                    {
-                        list.Add(t.GetDefaultValue());
-                    }
-                    //else if(OtherValues[key] == "ModifiedOn")
-                    //{
-                    //    list.Add(t.GetDefaultValue(OtherValues[key]));
-                    //}
-                    else
-                    {
-                        list.Add(t.GetDefaultValue(OtherValues[key]));
-                    }
-                }
-                if (PrimaryValues != null)
-                    foreach (var key in PrimaryValues.Keys)
+                    var index = this.OtherValues.IndexOf(item);
+                    foreach (var key in item.Keys)
                     {
                         var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
                         var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                        list.Add(t.GetDefaultValue(PrimaryValues[key]));
+                        if (ForeignKeyValues[index].ContainsKey(key))
+                        {
+                            list.Add(ForeignKeyValues[index][key]);
+                        }
+                        else if (item[key] == null)
+                        {
+                            list.Add(t.GetDefaultValue());
+                        }
+                        //else if(OtherValues[key] == "ModifiedOn")
+                        //{
+                        //    list.Add(t.GetDefaultValue(OtherValues[key]));
+                        //}
+                        else
+                        {
+                            list.Add(t.GetDefaultValue(item[key]));
+                        }
                     }
+                    if (PrimaryValues != null)
+                    {
+                        foreach (var key in PrimaryValues[index].Keys)
+                        {
+                            var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
+                            var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
+                            list.Add(t.GetDefaultValue(PrimaryValues[index][key]));
+                        }
+                    }
+                }
                 return list.ToArray();
             }
         }
@@ -252,7 +258,7 @@ namespace Jittor.App.Models
                         entity = ProcessFromRecursive(entity, keyValuePairs, model, att);
                     }
                 }
-                if (entity.OtherValues.Count == 0 && entity.ChildValues.Count == 0)
+                if (entity.OtherValues.Count == 0)
                 {
                     entity.ValidToCreate = false;
                 }
@@ -261,17 +267,19 @@ namespace Jittor.App.Models
             return list;
         }
 
-        public static ProcessEntityModel ProcessFromRecursive(ProcessEntityModel entity, Dictionary<string, object> keyValuePairs, JittorPageModel model, JITPageAttribute? att = null, bool isChildTable = false)
+        public static ProcessEntityModel ProcessFromRecursive(ProcessEntityModel entity, Dictionary<string, object> keyValuePairs, JittorPageModel model, JITPageAttribute? att = null)
         {
-            if(att == null)
+            var index = entity.OtherValues.Count - 1;
+
+            if (att == null)
             {
                 var keyValuePairsChilds = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(keyValuePairs[entity.TableName].ToString() ?? "[]") ?? new List<Dictionary<string, object>>();
                 foreach (var item in keyValuePairsChilds)
                 {
-                    entity.ChildValues.Add(new Dictionary<string, object>());
+                    entity.OtherValues.Add(new Dictionary<string, object>());
                     foreach (var attChild in entity.TableAttributes)
                     {
-                        entity = ProcessFromRecursive(entity, item, model, attChild, true);
+                        entity = ProcessFromRecursive(entity, item, model, attChild);
                     }
                 }
             }
@@ -281,8 +289,8 @@ namespace Jittor.App.Models
                 {
                     if (keyValuePairs[att.AttributeName] != null)
                     {
-                        entity.PrimaryValues = entity.PrimaryValues ?? new Dictionary<string, object>();
-                        entity.PrimaryValues.Add(att.AttributeName, keyValuePairs[att.AttributeName]);
+                        entity.PrimaryValues = entity.PrimaryValues ?? new List<Dictionary<string, object>>();
+                        entity.PrimaryValues[index].Add(att.AttributeName, keyValuePairs[att.AttributeName]);
                         entity.ValidToUpdate = true;
                         entity.ValidToCreate = false;
                         entity.ValidToDelete = model.DeleteRecord && string.IsNullOrEmpty(model.SoftDeleteColumn);
@@ -290,10 +298,7 @@ namespace Jittor.App.Models
                 }
                 else
                 {
-                    if(isChildTable)
-                        entity.ChildValues[entity.ChildValues.Count - 1].Add(att.AttributeName, keyValuePairs[att.AttributeName]);
-                    else
-                        entity.OtherValues.Add(att.AttributeName, keyValuePairs[att.AttributeName]);
+                    entity.OtherValues[index].Add(att.AttributeName, keyValuePairs[att.AttributeName]);
                 }
             }
             else if (att.IsRequired && !att.IsPrimaryKey && string.IsNullOrEmpty(att.DefaultValue))
@@ -303,10 +308,7 @@ namespace Jittor.App.Models
             }
             else if (att.IsRequired == false && (!string.IsNullOrEmpty(att.DefaultValue) || model.PageTables.Any(x => x.TableName == att.ParentTableName)))
             {
-                if (isChildTable)
-                    entity.ChildValues[entity.ChildValues.Count - 1].Add(att.AttributeName, att.DefaultValue);
-                else
-                    entity.OtherValues.Add(att.AttributeName, att.DefaultValue);
+                entity.OtherValues[index].Add(att.AttributeName, att.DefaultValue);
             }
             return entity;
         }
