@@ -205,8 +205,10 @@ namespace Jittor.App.DataServices
             [Column] public string LookUpColumn { get; set; }
             [Column] public string LookUpTable { get; set; }
             [Column] public string ProjectId { get; set; }
-            [Column] public string SectionDetails { get; set; }
-            [Column] public string ExtraFields { get; set; }
+            [Column] public int FieldType { get; set; }
+            [Column] public int FieldSubType { get; set; }
+            [Column] public string FieldActions { get; set; }
+            [Column] public int SectionId { get; set; }
         }
         [TableName("JITPages")]
         [PrimaryKey("PageID")]
@@ -249,6 +251,20 @@ namespace Jittor.App.DataServices
             [Column] public int? ParentGroupID { get; set; }
             [Column] public string GroupName { get; set; }
             [Column] public string Icon { get; set; }
+        }
+        [TableName("JITPageSections")]
+        [PrimaryKey("PageSectionId")]
+        [ExplicitColumns]
+        public partial class JITPageSection : FrameworkRepository.Record<JITPageSection>
+        {
+            [Column] public int PageSectionId { get; set; }
+            [Column] public string Label { get; set; }
+            [Column] public string Id { get; set; }
+            [Column] public string Classes { get; set; }
+            [Column] public bool? IsVisible { get; set; }
+            [Column] public int? DisplayableSeqNo { get; set; }
+            [Column] public int PageId { get; set; }
+            [Column] public string ProjectId { get; set; }
         }
         [TableName("JITPageTables")]
         [PrimaryKey("TableID")]

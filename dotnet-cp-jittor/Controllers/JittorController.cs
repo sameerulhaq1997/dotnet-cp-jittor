@@ -82,6 +82,33 @@ namespace Jittor.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("table/dropdown/{tableName}/{columnName}")]
+        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null)
+        {
+            try
+            {
+                Request.Headers.TryGetValue("filters", out StringValues filtersString);
+                var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
+
+                Request.Headers.TryGetValue("joins", out StringValues joinsString);
+                var joins = joinsString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageJoinModel>>(joinsString.ToString()) ?? new List<PageJoinModel>()) : null;
+
+                DropdownListerRequest request = new DropdownListerRequest()
+                {
+                    TableName = tableName,
+                    ColumnName = columnName,
+                    Sort = sort,
+                    Filters = filters,
+                    Joins = joins
+                };
+                var res = _jittorService.PoplulateDropDowns(request);
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
         [HttpGet("form-builder/lister/{pageId}")]
         public async Task<IActionResult> GetFormBuilderLister(int pageId)
         {

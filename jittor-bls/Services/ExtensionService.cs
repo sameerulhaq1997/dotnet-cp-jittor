@@ -1,7 +1,10 @@
 ﻿
 
 using Jittor.App.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PetaPoco;
+
 
 namespace Jittor.App.Services
 {
@@ -131,5 +134,41 @@ namespace Jittor.App.Services
             }).ToList();
         }
 
+        private static bool ValidateValue(object value, ValidationRule rule)
+        {
+            switch (rule.Type.ToLower())
+            {
+                case "required":
+                    return true;
+
+                case "maxlength":
+                    if (value == null || string.IsNullOrEmpty(value.ToString()))
+                        return true;
+                    int maxLength = Convert.ToInt32(rule.Parameters["maxLength"]);
+                    return value.ToString().Length <= maxLength;
+                case "range":
+                    if (value == null || string.IsNullOrEmpty(value.ToString()))
+                        return true;
+                    int min = Convert.ToInt32(rule.Parameters["min"]);
+                    int max = Convert.ToInt32(rule.Parameters["max"]);
+                    int intValue = Convert.ToInt32(value);
+                    return intValue >= min && intValue <= max;
+
+                // Add more validation types as needed
+
+                default:
+                    throw new ArgumentException($"Unsupported validation type '{rule.Type}'");
+            }
+        }
+
     }
+
+
+    public class ValidationParameters
+    {
+        public int? MaxLength { get; set; }
+        public int? Min { get; set; }
+        public int? Max { get; set; }
+    }
+
 }

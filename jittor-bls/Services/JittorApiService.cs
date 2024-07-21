@@ -26,16 +26,22 @@ namespace Jittor.App.Services
             formPageModel.Form = JittorMapperHelper.Map<Form, JITPageTable>(res.PageTables.FirstOrDefault(x => x.ForView) ?? new JITPageTable());
             formPageModel.Form.FormName = res.PageName;
 
-            formPageModel.Sections = new List<FormSection>();
-            FormSection formSection = new FormSection();
-            formSection.Label = formPageModel.Form.FormName;
-            formSection.Id = formPageModel.Form.FormName;
-            formSection.IsVisible = true;
-            formSection.Fields = new List<FieldModel>();
-            formSection.Fields.AddRange(JittorMapperHelper.MapList<FieldModel, JITPageAttribute>(res.PageAttributes));
-            formSection.Fields.ForEach(x => x.Validations = string.IsNullOrEmpty(x.ValidationString) ? null : JsonConvert.DeserializeObject<Dictionary<string, string>>(x.ValidationString));
-            formPageModel.Sections.Add(formSection);
+            var sections = JittorMapperHelper.MapList<FormSection, JITPageSection>(res.PageSections);
+            var attributes = JittorMapperHelper.MapList<FieldModel, JITPageAttribute>(res.PageAttributes);
 
+            formPageModel.Sections = new List<FormSection>();
+            foreach (var item in attributes.GroupBy(x => x.SectionId))
+            {
+                var section = sections.FirstOrDefault(x => x.PageSectionId == item.Key);
+                if (section != null)
+                {
+                    if (section.Fields == null)
+                        section.Fields = new List<FieldModel>();
+
+                    section.Fields.AddRange(item);
+                    formPageModel.Sections.Add(section);
+                }
+            }
             return formPageModel;
         }
         public async Task<List<FieldModel>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
@@ -68,17 +74,17 @@ namespace Jittor.App.Services
                     ActualValue = column.DefaultValue,
                     ValueType = column.DataType.GetApplicationValueTypeEnum()
                 };
-                field.Validations = new Dictionary<string, string>();
+                field.Validations = new List<ValidationRule>();
                 if (column.IsNullable == "YES")
-                    field.Validations.Add("required", "true");
+                    field.Validations.Add(new ValidationRule() { Type = "required", ErrorMessage = "required" });
                 if (column.MaxLength > 0)
-                    field.Validations.Add("maxLength", column.MaxLength.ToString());
-                if (column.NumericPrecision > 0)
-                {
-                    var maxNumber = "9".PadLeft(column.NumericPrecision - 1, '9');
-                    field.Validations.Add("maxNumber", maxNumber);
-                    field.Validations.Add("maxScale", column.NumericScale.ToString());
-                }
+                    field.Validations.Add(new ValidationRule() { Type = "maxLength", Parameters = new Dictionary<string, object>(), ErrorMessage = "maxLength" });
+                //if (column.NumericPrecision > 0)
+                //{
+                //    var maxNumber = "9".PadLeft(column.NumericPrecision - 1, '9');
+                //    field.Validations.Add("maxNumber", maxNumber);
+                //    field.Validations.Add("maxScale", column.NumericScale.ToString());
+                //}
                 fields.Add(field);
             }
             return fields;
@@ -299,6 +305,11 @@ namespace Jittor.App.Services
         public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request)
         {
             var res = _jittorDataServices.GetPageLister(request);
+            return res;
+        }
+        public DropdownListerResponse PoplulateDropDowns(DropdownListerRequest request)
+        {
+            var res = _jittorDataServices.PoplulateDropDowns(request);
             return res;
         }
         public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)

@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System;
 using Newtonsoft.Json.Linq;
 using System.Transactions;
+using System.Collections;
 
 namespace Jittor.App.Services
 {
@@ -48,6 +49,7 @@ namespace Jittor.App.Services
                 {
                     model.PageAttributes = context.Fetch<JITPageAttribute>($"Select * From JITPageAttributes Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
                     model.PageTables = context.Fetch<JITPageTable>($"Select * From JITPageTables Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
+                    model.PageSections = context.Fetch<JITPageSection>($"Select * From JITPageSections Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
                     var gids = model.PageAttributes.Select(x => x.DisplayGroupID).Distinct().ToArray();
                     model.AttributeDisplayGroups = context.Fetch<AttributeDisplayGroup>("Select * From JITAttributeDisplayGroups D Inner Join JITDisplayGroupTypes T On D.DisplayGroupTypeID = T.DisplayGroupTypeID Where D.DisplayGroupID In(@0)", gids).ToList();
                     Dictionary<string, object?> selectedRecord = new Dictionary<string, object?>();
@@ -329,6 +331,7 @@ namespace Jittor.App.Services
                 using var context = DataContexts.GetJittorDataContext();
                 using (var tr = context.GetTransaction())
                 {
+                    form.ProjectId = _projectId;
                     var page = JittorMapperHelper.Map<JITPage, FormPageModel>(form);
                     page.ProjectId = _projectId;
                     var pageId = context.Insert(page);
@@ -342,6 +345,10 @@ namespace Jittor.App.Services
                         var newTable = form.Form;
                         newTable.TableName = item;
                         newTable.ListerTableName = mainTable;
+                        newTable.PageID = Convert.ToInt32(pageId);
+                        newTable.ProjectId = _projectId;
+                        newTable.ForView = mainTable == item;
+
                         var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
                         table.PageID = Convert.ToInt32(pageId);
                         table.ProjectId = _projectId;
@@ -351,6 +358,10 @@ namespace Jittor.App.Services
 
                     foreach (var section in form.Sections)
                     {
+                        section.ProjectId = _projectId;
+                        section.PageID = Convert.ToInt32(pageId);
+                        var sectionDb = JittorMapperHelper.Map<JITPageSection, FormSection>(section);
+                        context.Insert(sectionDb);
                         foreach (var field in section.Fields)
                         {
                             var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
@@ -361,7 +372,8 @@ namespace Jittor.App.Services
                                 field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
                                 field.PageId = page.PageID;
                                 field.CurrentColumn = currentColumn;
-                                field.ValidationString = field.Validations != null ? JsonConvert.SerializeObject(field.Validations) : "";
+                                field.SectionId = sectionDb.PageSectionId;
+                                field.ProjectId = _projectId;
                                 var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
                                 attribute.ProjectId = _projectId;
                                 context.Insert(attribute);
@@ -418,7 +430,7 @@ namespace Jittor.App.Services
                 }
 
                 var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
-                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName}");
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)
                 {
@@ -428,7 +440,7 @@ namespace Jittor.App.Services
 
                         if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
                         {
-                            sql.Append($"{join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn}");
+                            sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
                         }
                     }
                 }
@@ -445,7 +457,7 @@ namespace Jittor.App.Services
 
                 int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
                 int offset = (request.PageNumber - 1) * pageSize;
-                sql.Append($"OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY");
+                sql.Append($" OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY ");
 
                 var list = tableContext.Fetch<dynamic>(sql).ToList();
                 List<string> columns = new List<string>();
@@ -470,6 +482,70 @@ namespace Jittor.App.Services
                             Hideable= splittedKey[1] == "id" ? false : true,
                         };
                     }).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+        public DropdownListerResponse PoplulateDropDowns(DropdownListerRequest request)
+        {
+            try
+            {
+                List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
+                using var tableContext = _tableContext;
+                using var context = DataContexts.GetJittorDataContext();
+
+                var selectColumnList = request.ColumnName.Split(',').Take(1).ToList();
+                var joins = request.Joins ?? new List<PageJoinModel>();
+                request.Filters = request.Filters ?? new List<PageFilterModel>();
+
+                var tableColumns = GetTableAndChildTableColumns(request.TableName);
+                selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
+                request.Filters = request.Filters.ValidateTableColumns(tableColumns);
+
+                string orderString = request.Sort ?? "";
+                var orders = orderString.Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList().ValidateTableColumns(tableColumns, true);
+
+                if (selectColumnList.Any(x => x.Contains("*")))
+                {
+                    selectColumnList.AddRange(tableColumns.Where(y => selectColumnList.Where(x => x.Contains("*")).Select(x => x.Replace(".*", "").Trim()).Contains(y.TableName)).Select(x => x.TableName + "." + x.ColumnName).ToList());
+                    selectColumnList.RemoveAll(x => x.Contains("*"));
+                    selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
+                }
+
+                var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == request.TableName.ToLower())!.ColumnName ?? "") + " AS Value, ";
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {(selectColumnList.Select(x => x).FirstOrDefault() ?? "") + " as Label"} FROM {request.TableName} ");
+                if (joins != null)
+                {
+                    foreach (var join in joins.ValidateTableColumns(tableColumns))
+                    {
+                        bool tableExists = tableColumns.Select(x => x.TableName).Contains(join.JoinTable);
+
+                        if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
+                        {
+                            sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
+                        }
+                    }
+                }
+                if (request.Filters.Count > 0)
+                {
+                    sql.Append(" WHERE ");
+                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter));
+                }
+
+                if (orders.Count() > 0)
+                    sql.OrderBy(string.Join(',', orders));
+                else
+                    sql.OrderBy((tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == request.TableName.ToLower())!.ColumnName ?? "") + " DESC ");
+
+
+                var list = tableContext.Fetch<FieldOption>(sql).ToList();
+                return new DropdownListerResponse()
+                {
+                    Items = list
                 };
             }
             catch (Exception ex)

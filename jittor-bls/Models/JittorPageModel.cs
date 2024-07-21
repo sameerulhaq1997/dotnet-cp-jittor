@@ -18,6 +18,7 @@ namespace Jittor.App.Models
             PageTables = new List<JITPageTable>();
             PageTablesData = new Dictionary<string, object>();
             AttributeDisplayGroups = new List<AttributeDisplayGroup>();
+            PageSections = new List<JITPageSection>();
 
         }
         public object SelectedRecord { get; set; }
@@ -35,6 +36,7 @@ namespace Jittor.App.Models
         }
         public List<JITPageAttribute> PageAttributes { get; set; }
         public List<JITPageTable> PageTables { get; set; }
+        public List<JITPageSection> PageSections { get; set; }
         public List<JITPageAttribute> SearchAttributes { get; set; }
         public Dictionary<string, object> PageTablesData { get; set; }
         public List<AttributeDisplayGroup> AttributeDisplayGroups { get; set; }
@@ -337,4 +339,17 @@ namespace Jittor.App.Models
         public int TotalPages => (int)Math.Ceiling((double)TotalItemCount / PageSize);
     }
 
+
+    public class DropdownListerRequest
+    {
+        public string? Sort { get; set; }
+        public List<PageFilterModel>? Filters { get; set; } = null;
+        public string ColumnName { get; set; }
+        public string TableName { get; set; }
+        public List<PageJoinModel>? Joins { get; set; }
+    }
+    public class DropdownListerResponse
+    {
+        public List<FieldOption> Items { get; set; } = new List<FieldOption>();
+    }
 }

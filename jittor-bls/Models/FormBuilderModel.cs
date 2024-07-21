@@ -39,53 +39,58 @@ namespace Jittor.App.Models
  
     public class FieldModel
     {
-        public string CssID { get; set; }
-        public string CssClasses { get; set; }
-        public string HelperText { get; set; }
-        public string PlaceholderEn { get; set; }
-        public string PlaceholderAr { get; set; }
-        public string Id { get; set; }
+        public string? CssID { get; set; }
+        public string? CssClasses { get; set; }
+        public string? HelperText { get; set; }
+        public string? PlaceholderEn { get; set; }
+        public string? PlaceholderAr { get; set; }
+        public string? Id { get; set; }
         public bool IsDisabled { get; set; }
         public bool IsVisible { get; set; }
         public ApplicationFieldTypeEnum FieldType { get; set; }
         public ApplicationFieldSubTypeEnum FieldSubType { get; set; }
         public FieldValue InpValue { get; set; }
-        public List<FieldOption> Options { get; set; }
-        public Dictionary<string, string>? Validations { get; set; }
-        public string? ValidationString { get; set; }
-        public List<FieldAction> Actions { get; set; }
+        public List<FieldOption>? Options { get; set; }
+        public List<ValidationRule>? Validations { get; set; }
+        public List<FieldAction>? Actions { get; set; }
         public string TableName { get; set; }
         public string LabelAr { get; set; }
         public string LabelEn { get; set; }
         public int? AttributeTypeId { get; set; }
-        public string ParentTableName { get; set; }
-        public string ParentTableNameColumn { get; set; }
-        public string ParentCondition { get; set; }
+        public string? ParentTableName { get; set; }
+        public string? ParentTableNameColumn { get; set; }
+        public string? ParentCondition { get; set; }
         public int DisplayableSeqNo { get; set; }
-        public int SearchableSeqNo { get; set; }
-        public string OptionIdColumn { get; set; }
-        public string OptionLabelColumn { get; set; }
-        public string OptionTable { get; set; }
+        public int? SearchableSeqNo { get; set; }
         public JittorColumnInfo? CurrentColumn { get; set; }
         public int? PageId { get; set; }
         public int? TableId { get; set; }
+        public int SectionId { get; set; }
+        public string? ProjectId { get; set; }
+        public bool IsRequired { get; set; }
+        public bool IsForeignKey { get; set; }
+        public bool IsAutoIncreament { get; set; }
+        public bool IsPrimaryKey { get; set; }
+        public bool Searchable { get; set; }
+        public int MaxLength { get; set; }
 
         public FieldModel()
         {
             Options = new List<FieldOption>();
-            Validations = new Dictionary<string, string>();
+            Validations = new List<ValidationRule>();
             Actions = new List<FieldAction>();
+            InpValue = new FieldValue();
         }
     }
     public class FieldOption
     {
         public int Value { get; set; }
         public string Label { get; set; }
-        public bool IsDisabled { get; set; }
+        public bool Disabled { get; set; }
     }
     public class FieldValue
     {
-        public dynamic? ActualValue { get; set; }
+        public string ActualValue { get; set; }
         public ApplicationValueTypeEnum ValueType { get; set; }
     }
     public class FieldAction
@@ -100,39 +105,44 @@ namespace Jittor.App.Models
     {
         public Form Form { get; set; }
         public List<FormSection> Sections { get; set; }
-        
+        public string? ProjectId { get; set; }
     }
     public class Form
     {
         public string FormName { get; set; }
-        public List<string> ClassesName { get; set; }
+        public List<string>? ClassesName { get; set; }
         public string SoftDeleteColumn { get; set; }
         public bool ShowListing { get; set; }
         public bool ShowSearch { get; set; }
         public string ListingTitle { get; set; }
         
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public bool ShowFilters { get; set; }
         public int RecordsPerPage { get; set; }
         public int CurrentPage { get; set; }
         public string TableName { get; set; }
         public string? ListerTableName { get; set; }
-        public string TableAlias { get; set; }
-        public string SelectColumns { get; set; }
-        public string Filters { get; set; }
-        public string Orders { get; set; }
-        public string Joins { get; set; }
-        public string Extender { get; set; }
+        public string? TableAlias { get; set; }
+        public string? SelectColumns { get; set; }
+        public string? Filters { get; set; }
+        public string? Orders { get; set; }
+        public string? Joins { get; set; }
+        public string? Extender { get; set; }
+        public int PageID { get; set; }
+        public string? ProjectId { get; set; }
+        public bool ForView { get; set; }
     }
     public class FormSection
     {
+        public int PageSectionId { get; set; }
         public string Label { get; set; }
-        public string Id { get; set; }
-        public string CssClasses { get; set; }
-        public string CssID { get; set; }
+        public string? CssId { get; set; }
+        public string? CssClasses { get; set; }
         public bool IsVisible { get; set; }
         public int DisplayableSeqNo { get; set; }
         public List<FieldModel> Fields { get; set; }
+        public string? ProjectId { get; set; }
+        public int PageID { get; set; }
     }
 
     public class ResponseModel
@@ -166,6 +176,10 @@ namespace Jittor.App.Models
         public string ParentTableColumn { get; set; }
         public string JoinTableColumn { get; set; }
     }
-
-
+    public class ValidationRule
+    {
+        public string Type { get; set; }
+        public Dictionary<string, object>? Parameters { get; set; }
+        public string ErrorMessage { get; set; }
+    }
 }
