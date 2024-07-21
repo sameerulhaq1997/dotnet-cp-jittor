@@ -416,6 +416,7 @@ namespace Jittor.App.Services
                 List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
+
                 var table = context.Fetch<JITPageTable>($"SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1 AND ProjectId = '{_projectId}'", request.PageId).FirstOrDefault();
                 if (table == null)
                 {
@@ -499,7 +500,8 @@ namespace Jittor.App.Services
                             TableName = splittedKey[0],
                             Hideable= splittedKey[1] == "id" ? false : true,
                         };
-                    }).ToList()
+                    }).ToList(),
+                    //PageName = table.UrlFriendlyName
                 };
             }
             catch (Exception ex)

@@ -69,6 +69,7 @@ namespace Jittor.App.Helpers
             CreateMap<Form, JITPageTable>()
             .ForMember(dest => dest.TableName, opt => opt.MapFrom(src => src.TableName))
             .ForMember(dest => dest.ForView, opt => opt.MapFrom(src => src.ForView))
+            .ForMember(dest => dest.ForOperation, opt => opt.MapFrom(src => true))
             .ForMember(dest => dest.SelectColumns, opt => opt.MapFrom(src => src.SelectColumns))
             .ForMember(dest => dest.Filters, opt => opt.MapFrom(src => src.Filters))
             .ForMember(dest => dest.Orders, opt => opt.MapFrom(src => src.Orders))

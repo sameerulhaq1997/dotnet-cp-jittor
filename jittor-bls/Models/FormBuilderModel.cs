@@ -90,7 +90,7 @@ namespace Jittor.App.Models
     }
     public class FieldValue
     {
-        public string ActualValue { get; set; }
+        public string? ActualValue { get; set; }
         public ApplicationValueTypeEnum ValueType { get; set; }
     }
     public class FieldAction

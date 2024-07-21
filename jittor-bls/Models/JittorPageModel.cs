@@ -337,6 +337,7 @@ namespace Jittor.App.Models
         public int PageSize { get; set; }
         public dynamic Columns { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalItemCount / PageSize);
+
     }
 
 
@@ -351,5 +352,10 @@ namespace Jittor.App.Models
     public class DropdownListerResponse
     {
         public List<FieldOption> Items { get; set; } = new List<FieldOption>();
+    }
+
+    public class JitPageTableExtended : JITPageTable
+    {
+        [Column] public string UrlFriendlyName { get; set; }
     }
 }
