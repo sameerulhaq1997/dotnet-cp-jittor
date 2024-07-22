@@ -30,17 +30,10 @@ namespace Jittor.App.Services
             var attributes = JittorMapperHelper.MapList<FieldModel, JITPageAttribute>(res.PageAttributes);
 
             formPageModel.Sections = new List<FormSection>();
-            foreach (var item in attributes.GroupBy(x => x.SectionId))
+            foreach (var section in sections.OrderBy(x => x.DisplayableSeqNo))
             {
-                var section = sections.FirstOrDefault(x => x.PageSectionId == item.Key);
-                if (section != null)
-                {
-                    if (section.Fields == null)
-                        section.Fields = new List<FieldModel>();
-
-                    section.Fields.AddRange(item);
-                    formPageModel.Sections.Add(section);
-                }
+                section.Fields.AddRange(attributes.Where(x => x.SectionId == section.PageSectionId).OrderBy(x => x.DisplayableSeqNo));
+                formPageModel.Sections.Add(section);
             }
             return formPageModel;
         }
@@ -76,15 +69,14 @@ namespace Jittor.App.Services
                 };
                 field.Validations = new List<ValidationRule>();
                 if (column.IsNullable == "YES")
-                    field.Validations.Add(new ValidationRule() { Type = "required", ErrorMessage = "required" });
+                    field.Validations = field.Validations.SetValidationParams("required", "required");
                 if (column.MaxLength > 0)
-                    field.Validations.Add(new ValidationRule() { Type = "maxLength", Parameters = new Dictionary<string, object>(), ErrorMessage = "maxLength" });
-                //if (column.NumericPrecision > 0)
-                //{
-                //    var maxNumber = "9".PadLeft(column.NumericPrecision - 1, '9');
-                //    field.Validations.Add("maxNumber", maxNumber);
-                //    field.Validations.Add("maxScale", column.NumericScale.ToString());
-                //}
+                    field.Validations = field.Validations.SetValidationParams("characterRange", "not in range", new Dictionary<string, object>() { { "max", column.MaxLength } });
+                if (column.NumericPrecision > 0)
+                {
+                    var maxNumber = "9".PadLeft(column.NumericPrecision - 1, '9');
+                    field.Validations = field.Validations.SetValidationParams("NumericRange", "not in range", new Dictionary<string, object>() { { "max", maxNumber } });
+                }
                 fields.Add(field);
             }
             return fields;

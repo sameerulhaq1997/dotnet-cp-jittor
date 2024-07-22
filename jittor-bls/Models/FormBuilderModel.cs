@@ -73,12 +73,14 @@ namespace Jittor.App.Models
         public bool IsPrimaryKey { get; set; }
         public bool Searchable { get; set; }
         public int MaxLength { get; set; }
+        public List<FieldOption> HardCodedOptions { get; set; }
 
         public FieldModel()
         {
             Options = new List<FieldOption>();
             Validations = new List<ValidationRule>();
             Actions = new List<FieldAction>();
+            HardCodedOptions = new List<FieldOption>();
             InpValue = new FieldValue();
         }
     }

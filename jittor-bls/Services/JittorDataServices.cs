@@ -354,54 +354,54 @@ namespace Jittor.App.Services
                     {
                         context.Insert(page);
                     }
-                        var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
-                        List<JITPageTable> tables = new List<JITPageTable>();
-                        var mainTable = form.Form.TableName;
+                    var tableNames = form.Sections.SelectMany(x => x.Fields).Select(x => x.TableName).Distinct().ToList();
+                    List<JITPageTable> tables = new List<JITPageTable>();
+                    var mainTable = form.Form.TableName;
 
-                        foreach (var item in tableNames) //Insert Page Tables
+                    foreach (var item in tableNames) //Insert Page Tables
+                    {
+                        var newTable = form.Form;
+                        newTable.TableName = item;
+                        newTable.ListerTableName = mainTable;
+                        newTable.PageID = Convert.ToInt32(page.PageID);
+                        newTable.ProjectId = _projectId;
+                        newTable.ForView = mainTable == item;
+
+                        var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
+                        table.PageID = Convert.ToInt32(page.PageID);
+                        table.ProjectId = _projectId;
+                        context.Insert(table);
+                        tables.Add(table);
+                    }
+
+                    foreach (var section in form.Sections) //Insert PageSections
+                    {
+                        section.ProjectId = _projectId;
+                        section.PageID = Convert.ToInt32(page.PageID);
+                        var sectionDb = JittorMapperHelper.Map<JITPageSection, FormSection>(section);
+                        context.Insert(sectionDb);
+                        foreach (var field in section.Fields) //Insert PageAttributes
                         {
-                            var newTable = form.Form;
-                            newTable.TableName = item;
-                            newTable.ListerTableName = mainTable;
-                            newTable.PageID = Convert.ToInt32(page.PageID);
-                            newTable.ProjectId = _projectId;
-                            newTable.ForView = mainTable == item;
-
-                            var table = JittorMapperHelper.Map<JITPageTable, Form>(newTable);
-                            table.PageID = Convert.ToInt32(page.PageID);
-                            table.ProjectId = _projectId;
-                            context.Insert(table);
-                            tables.Add(table);
-                        }
-
-                        foreach (var section in form.Sections) //Insert PageSections
-                        {
-                            section.ProjectId = _projectId;
-                            section.PageID = Convert.ToInt32(page.PageID);
-                            var sectionDb = JittorMapperHelper.Map<JITPageSection, FormSection>(section);
-                            context.Insert(sectionDb);
-                            foreach (var field in section.Fields) //Insert PageAttributes
+                            var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
+                            if (currentColumn != null)
                             {
-                                var currentColumn = tableAndChildTableColumns.FirstOrDefault(x => x.ColumnName == field.Id && x.TableName == field.TableName);
-                                if (currentColumn != null)
-                                {
-                                    var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
-                                    field.AttributeTypeId = attributeType?.AttributeTypeID ?? 0;
-                                    field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
-                                    field.PageId = page.PageID;
-                                    field.CurrentColumn = currentColumn;
-                                    field.SectionId = sectionDb.PageSectionId;
-                                    field.ProjectId = _projectId;
-                                    var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
-                                    attribute.ProjectId = _projectId;
-                                    context.Insert(attribute);
-                                }
+                                var attributeType = attributeTypes.FirstOrDefault(x => x.TypeName == currentColumn.DataType);
+                                field.AttributeTypeId = attributeType?.AttributeTypeID ?? 0;
+                                field.TableId = tables.FirstOrDefault(x => x.TableName == currentColumn.TableName)?.TableID ?? 0;
+                                field.PageId = page.PageID;
+                                field.CurrentColumn = currentColumn;
+                                field.SectionId = sectionDb.PageSectionId;
+                                field.ProjectId = _projectId;
+                                var attribute = JittorMapperHelper.Map<JITPageAttribute, FieldModel>(field);
+                                attribute.ProjectId = _projectId;
+                                context.Insert(attribute);
                             }
                         }
+                    }
                     tr.Complete();
                 }
                 return true;
-                
+
             }
             catch (Exception e)
             {
@@ -430,7 +430,7 @@ namespace Jittor.App.Services
 
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
                 if(!string.IsNullOrEmpty(table.Filters))
-                    request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>());
+                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>()).ToList();
 
                 string orderString = "";
                 if (table.Orders != null || request.Sort != null)

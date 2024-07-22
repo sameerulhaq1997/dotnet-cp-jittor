@@ -210,32 +210,50 @@ namespace Jittor.App.Services
             }).ToList();
         }
 
-        private static bool ValidateValue(object value, ValidationRule rule)
+        public static T? GetValidationParams<T>(this List<ValidationRule> validations, string type, string param)
         {
-            switch (rule.Type.ToLower())
+            var validation = validations.FirstOrDefault(x => x.Type == type);
+            if (validation != null && validation.Type == type && validation.Parameters != null && validation.Parameters.TryGetValue(param, out var value))
             {
-                case "required":
-                    return true;
-
-                case "maxlength":
-                    if (value == null || string.IsNullOrEmpty(value.ToString()))
-                        return true;
-                    int maxLength = Convert.ToInt32(rule.Parameters["maxLength"]);
-                    return value.ToString().Length <= maxLength;
-                case "range":
-                    if (value == null || string.IsNullOrEmpty(value.ToString()))
-                        return true;
-                    int min = Convert.ToInt32(rule.Parameters["min"]);
-                    int max = Convert.ToInt32(rule.Parameters["max"]);
-                    int intValue = Convert.ToInt32(value);
-                    return intValue >= min && intValue <= max;
-
-                // Add more validation types as needed
-
-                default:
-                    throw new ArgumentException($"Unsupported validation type '{rule.Type}'");
+                if (value is T typedValue)
+                {
+                    return typedValue;
+                }
             }
+            return default;
         }
+        public static List<ValidationRule> SetValidationParams(this List<ValidationRule> validations, string type, string message, Dictionary<string, object>? parameters = null)
+        {
+            var validation = validations.FirstOrDefault(x => x.Type == type);
+
+            if (validation != null)
+            {
+                validation.ErrorMessage = message;
+
+                if (validation.Parameters == null)
+                    validation.Parameters = new Dictionary<string, object>();
+
+                if (parameters != null)
+                {
+                    foreach (var kvp in parameters)
+                    {
+                        validation.Parameters[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+            else
+            {
+                validation = new ValidationRule
+                {
+                    Type = type,
+                    ErrorMessage = message,
+                    Parameters = parameters ?? new Dictionary<string, object>()
+                };
+                validations.Add(validation);
+            }
+            return validations;
+        }
+
 
     }
 

@@ -209,6 +209,7 @@ namespace Jittor.App.DataServices
             [Column] public int FieldSubType { get; set; }
             [Column] public string FieldActions { get; set; }
             [Column] public int SectionId { get; set; }
+            [Column] public string HardCodedOptions { get; set; }
         }
         [TableName("JITPages")]
         [PrimaryKey("PageID")]

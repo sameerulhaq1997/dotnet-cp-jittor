@@ -117,6 +117,7 @@ namespace Jittor.App.Helpers
             .ForMember(dest => dest.FieldType, opt => opt.MapFrom(src => (int)src.FieldType))
             .ForMember(dest => dest.FieldSubType, opt => opt.MapFrom(src => (int)src.FieldSubType))
             .ForMember(dest => dest.FieldActions, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.Actions)))
+            .ForMember(dest => dest.HardCodedOptions, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.HardCodedOptions)))
             .ForMember(dest => dest.SectionId, opt => opt.MapFrom(src => src.SectionId))
             .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId))
             .ForMember(dest => dest.DefaultValue, opt => opt.MapFrom(src => src.InpValue!.ActualValue ?? ""));
@@ -147,6 +148,7 @@ namespace Jittor.App.Helpers
             .ForMember(dest => dest.FieldType, opt => opt.MapFrom(src => (ApplicationFieldTypeEnum)src.FieldType))
             .ForMember(dest => dest.FieldSubType, opt => opt.MapFrom(src => (ApplicationFieldSubTypeEnum)src.FieldSubType))
             .ForMember(dest => dest.Actions, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<List<FieldAction>>(src.FieldActions)))
+            .ForMember(dest => dest.HardCodedOptions, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<List<FieldOption>>(src.HardCodedOptions)))
             .ForMember(dest => dest.SectionId, opt => opt.MapFrom(src => src.SectionId))
             .ForMember(dest => dest.ProjectId, opt => opt.MapFrom(src => src.ProjectId));
 

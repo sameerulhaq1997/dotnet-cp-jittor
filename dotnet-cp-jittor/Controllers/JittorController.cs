@@ -122,7 +122,6 @@ namespace Jittor.Api.Controllers
             //var groupedRes = jitorPageModel.GroupBy(x => x.TableName).Select(x => new { TableName = x.Key, Fields = x });
             return Ok(jitorTableModel);
         }
-
         [HttpGet("pages")]
         public async Task<IActionResult> GetAllPages()
         {
@@ -135,6 +134,5 @@ namespace Jittor.Api.Controllers
             var res = await _jittorService.DeleteForm(pageID);
             return Ok(res);
         }
-
     }
 }
