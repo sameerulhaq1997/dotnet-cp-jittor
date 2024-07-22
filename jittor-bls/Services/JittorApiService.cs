@@ -180,6 +180,7 @@ namespace Jittor.App.Services
                                 foreignKeyValues = foreignKeyValues.Concat(foreignKeyValue).GroupBy(kvp => kvp.Key).ToDictionary(group => group.Key, group => group.Last().Value);
                             }
                         }
+                        item.ForeignKeyValues = item.ForeignKeyValues ?? new List<Dictionary<string, object>>();
                         item.ForeignKeyValues.Add(foreignKeyValues); // will cause some issue, need proper focus
                         if (item.ValidToCreate)
                         {

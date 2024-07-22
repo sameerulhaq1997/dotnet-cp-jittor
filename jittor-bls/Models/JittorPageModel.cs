@@ -177,19 +177,16 @@ namespace Jittor.App.Models
                         else
                         {
                             list.Add(t.GetDefaultValue(item[key]));
-                        }
+                        }                        
                     }
-                }
-
-                
-
-                // Add the additional field values to the parameters list
-                if (InsertCompulsaryFields)
-                {
-                    list.Add(DateTime.Now);  // CreatedOn
-                    list.Add(11000);         // CreatedBy
-                    list.Add(DateTime.Now);  // ModifiedOn
-                    list.Add(11000);         // ModifiedBy
+                    // Add the additional field values to the parameters list
+                    if (InsertCompulsaryFields)
+                    {
+                        list.Add(DateTime.Now);  // CreatedOn
+                        list.Add(11000);         // CreatedBy
+                        list.Add(DateTime.Now);  // ModifiedOn
+                        list.Add(11000);         // ModifiedBy
+                    }
                 }
 
                 return list.ToArray();
@@ -270,6 +267,13 @@ namespace Jittor.App.Models
         public static ProcessEntityModel ProcessFromRecursive(ProcessEntityModel entity, Dictionary<string, object> keyValuePairs, JittorPageModel model, JITPageAttribute? att = null)
         {
             var index = entity.OtherValues.Count - 1;
+            if (index == -1 && att != null)
+            {
+                entity.OtherValues.Add(new Dictionary<string, object>());
+                entity.PrimaryValues = entity.PrimaryValues ?? new List<Dictionary<string, object>>();
+                entity.PrimaryValues.Add(new Dictionary<string, object>());
+                index = 0;
+            }
 
             if (att == null)
             {
@@ -277,6 +281,8 @@ namespace Jittor.App.Models
                 foreach (var item in keyValuePairsChilds)
                 {
                     entity.OtherValues.Add(new Dictionary<string, object>());
+                    entity.PrimaryValues = entity.PrimaryValues ?? new List<Dictionary<string, object>>();
+                    entity.PrimaryValues.Add(new Dictionary<string, object>());
                     foreach (var attChild in entity.TableAttributes)
                     {
                         entity = ProcessFromRecursive(entity, item, model, attChild);
@@ -287,7 +293,7 @@ namespace Jittor.App.Models
             {
                 if (att.IsPrimaryKey)
                 {
-                    if (keyValuePairs[att.AttributeName] != null)
+                    if (keyValuePairs[att.AttributeName] != null && keyValuePairs[att.AttributeName].ToString() != "0")
                     {
                         entity.PrimaryValues = entity.PrimaryValues ?? new List<Dictionary<string, object>>();
                         entity.PrimaryValues[index].Add(att.AttributeName, keyValuePairs[att.AttributeName]);
