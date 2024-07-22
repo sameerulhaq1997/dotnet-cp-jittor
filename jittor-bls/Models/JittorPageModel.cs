@@ -80,7 +80,7 @@ namespace Jittor.App.Models
         public bool ValidToDelete { get; set; } = false;
         public List<JITAttributeType> AttributeTypes { get; set; } = new List<JITAttributeType>();
         public bool InsertCompulsaryFields { get; set; }
-        public List<Dictionary<string, object>> ForeignKeyValues { get; set; }
+        public Dictionary<string, object> ForeignKeyValues { get; set; }
         public string InsertCommand
         {
             get
@@ -166,9 +166,9 @@ namespace Jittor.App.Models
                     {
                         var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
                         var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                        if (ForeignKeyValues[index].ContainsKey(key))
+                        if (ForeignKeyValues.ContainsKey(key))
                         {
-                            list.Add(ForeignKeyValues[index][key]);
+                            list.Add(ForeignKeyValues[key]);
                         }
                         else if (item[key] == null)
                         {
@@ -205,9 +205,9 @@ namespace Jittor.App.Models
                     {
                         var attrib = this.TableAttributes.Where(x => x.AttributeName == key).First();
                         var t = this.AttributeTypes.Where(x => x.AttributeTypeID == attrib.AttributeTypeID).First();
-                        if (ForeignKeyValues[index].ContainsKey(key))
+                        if (ForeignKeyValues.ContainsKey(key))
                         {
-                            list.Add(ForeignKeyValues[index][key]);
+                            list.Add(ForeignKeyValues[key]);
                         }
                         else if (item[key] == null)
                         {
