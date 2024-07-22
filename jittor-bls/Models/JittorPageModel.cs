@@ -99,13 +99,7 @@ namespace Jittor.App.Models
                     // Append the additional fields to attribs
                     string[] allAttribs = InsertCompulsaryFields ? attribs.Concat(new[] { "CreatedOn", "CreatedBy", "ModifiedOn", "ModifiedBy" }).ToArray() : attribs;
 
-                    // Get the index of the first additional parameter
-                    int startIndex = attribs.Length;
-
-                    // Append the additional parameters to parameters using dynamic indices
-                    var allParameters = InsertCompulsaryFields ? parameters.Concat(
-                        Enumerable.Range(startIndex, 4).Select(x => $"@{x}")
-                    ) : parameters;
+                    var allParameters = Enumerable.Range(this.OtherValues.IndexOf(item) * allAttribs.Count(), allAttribs.Count()).Select(x => $"@{x}");
 
                     sb.Append($"INSERT INTO {this.TableName} ({string.Join(",", allAttribs)}) VALUES({string.Join(",", allParameters)});");
                 }
