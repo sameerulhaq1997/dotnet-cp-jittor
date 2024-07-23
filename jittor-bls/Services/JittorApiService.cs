@@ -77,6 +77,8 @@ namespace Jittor.App.Services
                     var maxNumber = "9".PadLeft(column.NumericPrecision - 1, '9');
                     field.Validations = field.Validations.SetValidationParams("NumericRange", "not in range", new Dictionary<string, object>() { { "max", maxNumber } });
                 }
+                field.ParentTableName = column.ReferencedTableName;
+                field.ParentTableNameColumn = column.ReferencedTableNameColumnName;
                 fields.Add(field);
             }
             return fields;

@@ -299,6 +299,8 @@ namespace Jittor.App.Models
         public int MaxLength { get; set; }
         public int NumericPrecision { get; set; }
         public int NumericScale { get; set; }
+        public string ReferencedTableName { get; set; }
+        public string ReferencedTableNameColumnName { get; set; }
     }
 
 

@@ -162,6 +162,8 @@ namespace Jittor.App.Services
                     WHERE kcu.TABLE_NAME = c.TABLE_NAME
                     AND kcu.COLUMN_NAME = c.COLUMN_NAME
                 ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsForeignKey,
+                rf.ReferencedTableName,
+                rf.ReferencedTableNameColumnName,
                 ep.value AS ColumnDescription
             FROM 
                 INFORMATION_SCHEMA.COLUMNS c
@@ -176,6 +178,22 @@ namespace Jittor.App.Services
                 ep.major_id = sc.object_id 
                 AND ep.minor_id = sc.column_id 
                 AND ep.name = 'MS_Description'
+            LEFT JOIN (
+                SELECT 
+                    fkc.parent_object_id,
+                    fkc.parent_column_id,
+                    OBJECT_NAME(fkc.referenced_object_id) AS ReferencedTableName,
+                    (SELECT TOP 1 col.name 
+                     FROM sys.columns col 
+                     WHERE col.object_id = fkc.referenced_object_id 
+				             AND col.system_type_id IN (167, 175, 231, 35)
+                     ORDER BY col.column_id) AS ReferencedTableNameColumnName
+                FROM 
+                    sys.foreign_key_columns AS fkc
+            ) AS rf
+            ON 
+                rf.parent_object_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
+                AND rf.parent_column_id = sc.column_id
             WHERE 
                 c.TABLE_SCHEMA = @0
                 AND c.TABLE_NAME in (@1)
