@@ -349,6 +349,7 @@ namespace Jittor.App.Models
     public class DropdownListerRequest
     {
         public string? Sort { get; set; }
+        public bool? IsArgaamContext  { get; set; }
         public List<PageFilterModel>? Filters { get; set; } = null;
         public string ColumnName { get; set; }
         public string TableName { get; set; }

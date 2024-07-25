@@ -79,6 +79,11 @@ namespace Jittor.App.Services
                 }
                 field.ParentTableName = column.ReferencedTableName;
                 field.ParentTableNameColumn = column.ReferencedTableNameColumnName;
+                if (!string.IsNullOrEmpty(field.ParentTableName))
+                {
+                    field.FieldType = ApplicationFieldTypeEnum.SELECT;
+                    field.FieldSubType = ApplicationFieldSubTypeEnum.SINGLE;
+                }
                 fields.Add(field);
             }
             return fields;

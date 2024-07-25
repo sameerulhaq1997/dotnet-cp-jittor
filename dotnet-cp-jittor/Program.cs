@@ -21,7 +21,11 @@ builder.Services.AddSingleton<JittorDataServices>(provider =>
     {
         EnableAutoSelect = true,
     };
-    return new JittorDataServices(repository, projectId);
+    var secondaryRepository = new FrameworkRepository("ConnectionStrings:ArgaamConnectionString")
+    {
+        EnableAutoSelect = true,
+    };
+    return new JittorDataServices(repository, projectId, secondaryRepository);
 });
 builder.Services.AddTransient<JittorApiService>();
 

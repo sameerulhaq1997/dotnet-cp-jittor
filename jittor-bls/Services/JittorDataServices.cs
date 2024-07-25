@@ -20,13 +20,15 @@ namespace Jittor.App.Services
     public class JittorDataServices
     {
         private readonly FrameworkRepository _tableContext;
+        private readonly FrameworkRepository? _secondaryTableContext;
         private Dictionary<string, List<JittorColumnInfo>> tableColumns = new Dictionary<string, List<JittorColumnInfo>>();
         private List<TableNode> tableNodes = new List<TableNode>();
         private readonly string _projectId;
-        public JittorDataServices(FrameworkRepository tableContext, string projectId)
+        public JittorDataServices(FrameworkRepository tableContext, string projectId, FrameworkRepository? secondaryTableContext = null)
         {
             _tableContext = tableContext;
             _projectId = projectId;
+            _secondaryTableContext = secondaryTableContext;
             GetAllTableStructures();
         }
         public List<TableNode> getTableNodes()
@@ -125,15 +127,15 @@ namespace Jittor.App.Services
             context.Execute(userId, tableName, operation, selectSql, operationSql, param);
             return context.Fetch<dynamic>(selectSql, param).ToList();
         }
-        public List<JittorColumnInfo> GetParentTableColumns(List<string> tableName, string? schemaName = "dbo")
+        public List<JittorColumnInfo> GetTableSchema(List<string> tables, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
 
-            var tablesToGet = tableName.Where(x => !tableColumns.Any(y => y.Key == x));
+            var tablesToGet = tables.Where(x => !tableColumns.Any(y => y.Key == x));
 
             List<JittorColumnInfo> tableColumnList = new List<JittorColumnInfo>();
             if (tablesToGet.Count() > 0)
             {
-                using var tableContext = _tableContext;
+                using var tableContext = context == null ? _tableContext : context;
                 var sql = @"
             SELECT 
                 c.TABLE_NAME AS TableName,
@@ -210,7 +212,7 @@ namespace Jittor.App.Services
                 }
             }
 
-            tableName.ForEach(x =>
+            tables.ForEach(x =>
             {
                 tableColumns.TryGetValue(x, out List<JittorColumnInfo>? value);
                 if (value != null)
@@ -222,10 +224,10 @@ namespace Jittor.App.Services
         }
 
         
-        public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
+        public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
             var tablesToGet = GetAllRelatedTables(tableName);
-            var parentData = GetParentTableColumns(tablesToGet, schemaName);
+            var parentData = GetTableSchema(tablesToGet, schemaName, context);
             return parentData;
 
         }
@@ -533,14 +535,14 @@ namespace Jittor.App.Services
             try
             {
                 List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
-                using var tableContext = _tableContext;
+                using var tableContext = request.IsArgaamContext == true ? _secondaryTableContext : _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
                 var selectColumnList = request.ColumnName.Split(',').Take(1).ToList();
                 var joins = request.Joins ?? new List<PageJoinModel>();
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
 
-                var tableColumns = GetTableAndChildTableColumns(request.TableName);
+                var tableColumns = GetTableAndChildTableColumns(request.TableName, "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
                 selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
                 request.Filters = request.Filters.ValidateTableColumns(tableColumns);
 

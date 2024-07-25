@@ -83,7 +83,7 @@ namespace Jittor.Api.Controllers
             }
         }
         [HttpGet("table/dropdown/{tableName}/{columnName}")]
-        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null)
+        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false)
         {
             try
             {
@@ -99,7 +99,8 @@ namespace Jittor.Api.Controllers
                     ColumnName = columnName,
                     Sort = sort,
                     Filters = filters,
-                    Joins = joins
+                    Joins = joins,
+                    IsArgaamContext = isArgaamContext
                 };
                 var res = _jittorService.PoplulateDropDowns(request);
                 return Ok(res);
