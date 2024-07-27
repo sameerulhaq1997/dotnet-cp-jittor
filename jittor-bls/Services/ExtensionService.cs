@@ -131,7 +131,7 @@ namespace Jittor.App.Services
             }
             return results;
         }
-        public static Sql BuildWhereClause(this Sql sql, PageFilterModel filter)
+        public static Sql BuildWhereClause(this Sql sql, PageFilterModel filter, int index)
         {
             switch (filter.Operator.ToLower())
             {
@@ -160,7 +160,12 @@ namespace Jittor.App.Services
                     break;
 
                 case "isnotempty":
-                    filter.Operator = "<>";
+                    filter.Operator = $"<>";
+                    filter.Value = "";
+                    break;
+
+                case "isnotnullorempty":
+                    filter.Operator = $"IS NOT NULL AND {filter.Field} <>";
                     filter.Value = "";
                     break;
 
@@ -172,7 +177,7 @@ namespace Jittor.App.Services
                 default:
                     throw new ArgumentException("Invalid operator type");
             }
-            return sql.Append($" {filter.Operation} {filter.Field} {filter.Operator} @0 ", filter.Value);
+            return sql.Append($" {(index == 0 ? "" : filter.Operation)} {filter.Field} {filter.Operator} @0 ", filter.Value ?? "");
         }
 
         public static List<string> ValidateTableColumns(this List<string> value, List<JittorColumnInfo> columns, bool isOrderBy = false)

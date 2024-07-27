@@ -168,7 +168,7 @@ namespace Jittor.App.Models
     {
         public string Field { get; set; }
         public string Operator { get; set; }
-        public string Value { get; set; }
+        public string? Value { get; set; }
         public string Operation { get; set; }
     }
     public class PageJoinModel

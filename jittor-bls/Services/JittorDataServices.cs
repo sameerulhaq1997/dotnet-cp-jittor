@@ -197,11 +197,10 @@ namespace Jittor.App.Services
                 rf.parent_object_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
                 AND rf.parent_column_id = sc.column_id
             WHERE 
-                c.TABLE_SCHEMA = @0
-                AND c.TABLE_NAME in (@1)
+                AND c.TABLE_NAME in (@0)
             ORDER BY 
                 TableName, ColumnName";
-                var newRenderedTables = tableContext.Fetch<JittorColumnInfo>(sql, schemaName ?? "", tablesToGet).ToList();
+                var newRenderedTables = tableContext.Fetch<JittorColumnInfo>(sql, tablesToGet).ToList();
 
                 foreach (var item in newRenderedTables.GroupBy(x => x.TableName))
                 {
@@ -486,7 +485,7 @@ namespace Jittor.App.Services
                 if (request.Filters.Count > 0)
                 {
                     sql.Append(" WHERE ");
-                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter));
+                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
                 }
 
                 if (orders.Count() > 0)
@@ -535,10 +534,10 @@ namespace Jittor.App.Services
             try
             {
                 List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
-                using var tableContext = request.IsArgaamContext == true ? _secondaryTableContext : _tableContext;
+                using var tableContext = request.IsArgaamContext == true ? _secondaryTableContext ?? _tableContext : _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
-                var selectColumnList = request.ColumnName.Split(',').Take(1).ToList();
+                var selectColumnList = request.ColumnName.Split(',').ToList();
                 var joins = request.Joins ?? new List<PageJoinModel>();
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
 
@@ -555,9 +554,9 @@ namespace Jittor.App.Services
                     selectColumnList.RemoveAll(x => x.Contains("*"));
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
-
+                string label = selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL({column}, '')")) : (selectColumnList.FirstOrDefault() ?? "");
                 var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == request.TableName.ToLower())!.ColumnName ?? "") + " AS Value, ";
-                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {(selectColumnList.Select(x => x).FirstOrDefault() ?? "") + " as Label"} FROM {request.TableName} ");
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {label + " as Label"} FROM {request.TableName} ");
                 if (joins != null)
                 {
                     foreach (var join in joins.ValidateTableColumns(tableColumns))
@@ -573,7 +572,7 @@ namespace Jittor.App.Services
                 if (request.Filters.Count > 0)
                 {
                     sql.Append(" WHERE ");
-                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter));
+                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
                 }
 
                 if (orders.Count() > 0)
