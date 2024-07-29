@@ -108,7 +108,7 @@ namespace Jittor.App.Services
                         //var list = tableContext.Fetch<dynamic>($"Select top 10 * From {table.TableName} Order By ModifiedOn desc").ToList();
                         //model.PageTablesData.Add(table.TableName, list);
                     }
-                    foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName)))
+                    foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName) && x.Displayable))
                     {
                         att.ForigenValues = tableContext.Fetch<ForigenValue>($"Select {att.AttributeName} As ID, {att.ParentTableNameColumn} As Name From {att.ParentTableName}  {(string.IsNullOrEmpty(att.ParentCondition) ? "" : att.ParentCondition)} order by {att.AttributeName} desc ").ToList();
                     }
@@ -466,7 +466,7 @@ namespace Jittor.App.Services
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
 
-                var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
+                var selectColumnId = (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
                 var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)

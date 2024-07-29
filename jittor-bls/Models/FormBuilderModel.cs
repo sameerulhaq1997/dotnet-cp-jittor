@@ -136,6 +136,10 @@ namespace Jittor.App.Models
     }
     public class FormSection
     {
+        public FormSection()
+        {
+            Fields = new List<FieldModel>();
+        }
         public int PageSectionId { get; set; }
         public string Label { get; set; }
         public string? CssId { get; set; }
@@ -145,6 +149,7 @@ namespace Jittor.App.Models
         public List<FieldModel> Fields { get; set; }
         public string? ProjectId { get; set; }
         public int PageID { get; set; }
+
     }
 
     public class ResponseModel

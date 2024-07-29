@@ -135,7 +135,7 @@ namespace Jittor.App.Helpers
             .ForMember(dest => dest.ParentTableName, opt => opt.MapFrom(src => src.ParentTableName))
             .ForMember(dest => dest.ParentTableNameColumn, opt => opt.MapFrom(src => src.ParentTableNameColumn))
             .ForMember(dest => dest.ParentCondition, opt => opt.MapFrom(src => src.ParentCondition))
-            .ForMember(dest => dest.Validations, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<Dictionary<string, string>>(src.ValidationExpression)))
+            .ForMember(dest => dest.Validations, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<List<ValidationRule>>(src.ValidationExpression)))
             .ForMember(dest => dest.IsAutoIncreament, opt => opt.MapFrom(src => src.IsAutoIncreament))
             .ForMember(dest => dest.IsPrimaryKey, opt => opt.MapFrom(src => src.IsPrimaryKey))
             .ForMember(dest => dest.IsDisabled, opt => opt.MapFrom(src => !src.Editable))
