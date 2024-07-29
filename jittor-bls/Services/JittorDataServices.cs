@@ -196,8 +196,7 @@ namespace Jittor.App.Services
             ON 
                 rf.parent_object_id = OBJECT_ID(c.TABLE_SCHEMA + '.' + c.TABLE_NAME)
                 AND rf.parent_column_id = sc.column_id
-            WHERE 
-                AND c.TABLE_NAME in (@0)
+            WHERE c.TABLE_NAME in (@0)
             ORDER BY 
                 TableName, ColumnName";
                 var newRenderedTables = tableContext.Fetch<JittorColumnInfo>(sql, tablesToGet).ToList();
