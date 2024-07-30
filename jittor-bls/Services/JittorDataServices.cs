@@ -540,6 +540,9 @@ namespace Jittor.App.Services
                 var joins = request.Joins ?? new List<PageJoinModel>();
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
 
+                var tableName = request.TableName;
+                request.TableName = request.TableName.Split(".").Length == 2 ? request.TableName.Split(".")[1] : request.TableName;
+
                 var tableColumns = GetTableAndChildTableColumns(request.TableName, "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
                 selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
                 request.Filters = request.Filters.ValidateTableColumns(tableColumns);
@@ -555,7 +558,7 @@ namespace Jittor.App.Services
                 }
                 string label = selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL({column}, '')")) : (selectColumnList.FirstOrDefault() ?? "");
                 var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == request.TableName.ToLower())!.ColumnName ?? "") + " AS Value, ";
-                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {label + " as Label"} FROM {request.TableName} ");
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {label + " as Label"} FROM {tableName} ");
                 if (joins != null)
                 {
                     foreach (var join in joins.ValidateTableColumns(tableColumns))
