@@ -18,9 +18,9 @@ namespace Jittor.App.Services
         {
             _jittorDataServices = jittorDataServices;
         }
-        public async Task<FormPageModel> GetPage(string pageName)
+        public async Task<FormPageModel> GetPage(string pageName, bool loadData = true)
         {
-            var res = await _jittorDataServices.GetPageModel(pageName, true) ?? new JittorPageModel();
+            var res = await _jittorDataServices.GetPageModel(pageName, loadData) ?? new JittorPageModel();
 
             var formPageModel = JittorMapperHelper.Map<FormPageModel, JITPage>(res);
             formPageModel.Form = JittorMapperHelper.Map<Form, JITPageTable>(res.PageTables.FirstOrDefault(x => x.ForView) ?? new JITPageTable());
@@ -30,13 +30,13 @@ namespace Jittor.App.Services
             var attributes = JittorMapperHelper.MapList<FieldModel, JITPageAttribute>(res.PageAttributes);
 
             formPageModel.Sections = new List<FormSection>();
-            foreach (var section in sections.OrderBy(x => x.DisplayableSeqNo))
-            {
-                section.Fields.AddRange(attributes.Where(x => x.SectionId == section.PageSectionId).OrderBy(x => x.DisplayableSeqNo));
-                formPageModel.Sections.Add(section);
+                foreach (var section in sections.OrderBy(x => x.DisplayableSeqNo))
+                {
+                    section.Fields.AddRange(attributes.Where(x => x.SectionId == section.PageSectionId).OrderBy(x => x.DisplayableSeqNo));
+                    formPageModel.Sections.Add(section);
+                }
+                return formPageModel;
             }
-            return formPageModel;
-        }
         public async Task<List<FieldModel>> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo")
         {
             var columns = _jittorDataServices.GetTableAndChildTableColumns(tableName, schemaName);
@@ -68,7 +68,7 @@ namespace Jittor.App.Services
                     ValueType = column.DataType.GetApplicationValueTypeEnum()
                 };
                 field.Validations = new List<ValidationRule>();
-                if (column.IsNullable == "YES")
+                if (column.IsNullable != "YES")
                     field.Validations = field.Validations.SetValidationParams("required", "required");
                 if (column.MaxLength > 0)
                     field.Validations = field.Validations.SetValidationParams("characterRange", "not in range", new Dictionary<string, object>() { { "max", column.MaxLength } });

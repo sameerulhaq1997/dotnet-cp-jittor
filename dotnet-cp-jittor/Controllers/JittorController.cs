@@ -24,7 +24,7 @@ namespace Jittor.Api.Controllers
         [HttpGet("page/{pageName}")]
         public async Task<IActionResult> GetPage(string pageName)
         {
-            var jitorPageModel = await _jittorService.GetPage(pageName);
+            var jitorPageModel = await _jittorService.GetPage(pageName, false);
             return Ok(jitorPageModel);
         }
         [HttpPost("form-builder")]

@@ -105,8 +105,8 @@ namespace Jittor.App.Services
                     model.PageTablesData.Clear();
                     foreach (var table in model.PageTables.Where(x => x.ForView))
                     {
-                        //var list = tableContext.Fetch<dynamic>($"Select top 10 * From {table.TableName} Order By ModifiedOn desc").ToList();
-                        //model.PageTablesData.Add(table.TableName, list);
+                        var list = tableContext.Fetch<dynamic>($"Select top 10 * From {table.TableName} Order By ModifiedOn desc").ToList();
+                        model.PageTablesData.Add(table.TableName, list);
                     }
                     foreach (var att in model.PageAttributes.Where(x => x.IsForeignKey && !string.IsNullOrEmpty(x.ParentTableName) && x.Displayable))
                     {
