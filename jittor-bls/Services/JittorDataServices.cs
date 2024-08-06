@@ -427,7 +427,7 @@ namespace Jittor.App.Services
                 return false;
             }
         }
-        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null)
         {
             try
             {
@@ -435,20 +435,24 @@ namespace Jittor.App.Services
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
-                var table = context.Fetch<JITPageTable>($"SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1 AND ProjectId = '{_projectId}'", request.PageId).FirstOrDefault();
+                var table = new JITPageTable();
+                if (externalTable != null)
+                    table.TableName = externalTable;
+                else
+                    table = context.Fetch<JITPageTable>($"SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1 AND ProjectId = '{_projectId}'", request.PageId).FirstOrDefault();
                 if (table == null)
                 {
                     return new DataListerResponse<dynamic>();
                 }
 
-                var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (table.TableName + ".*") : table.SelectColumns;
+                var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (string.IsNullOrEmpty(externalSelectedColumns) ? (table.TableName + ".*") : externalSelectedColumns) : table.SelectColumns;
                 var selectColumnList = selectClause.Split(',').ToList();
 
-                var joins = JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
+                var joins = externalJoins != null ? externalJoins : JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
 
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
-                if(!string.IsNullOrEmpty(table.Filters))
-                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>()).ToList();
+                if (!string.IsNullOrEmpty(table.Filters))
+                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters ?? "[]") ?? new List<PageFilterModel>()).ToList();
 
                 string orderString = "";
                 if (table.Orders != null || request.Sort != null)
@@ -466,7 +470,7 @@ namespace Jittor.App.Services
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
 
-                var selectColumnId = (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
+                var selectColumnId = string.IsNullOrEmpty(externalSelectedColumns) ? (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id" :"";
                 var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)

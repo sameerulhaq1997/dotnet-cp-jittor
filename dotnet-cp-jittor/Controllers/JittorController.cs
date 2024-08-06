@@ -82,6 +82,59 @@ namespace Jittor.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("page/lister/articles")]
+        public IActionResult GetPageListerArticles(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
+        {
+            try
+            {
+                Request.Headers.TryGetValue("filters", out StringValues filtersString);
+                var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
+
+                var request = new DataListerRequest()
+                {
+                    PageId = pageId,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    Sort = sort ?? "Articles.ArticleID DESC",
+                    Filters = new List<PageFilterModel>()
+                    {
+
+                    }
+                };
+                var res = _jittorService.GetPageLister(request, "articles", "Articles.ArticleID ,Articles.Title,Articles.Author,ArticleTypes.NameEn As Type ,ArticleStatuses.NameEn As Status ,ArticleViews.ViewCount ", new List<PageJoinModel>()
+                {
+                    new PageJoinModel()
+                    {
+                        JoinType = "left join",
+                        JoinTable = "ArticleStatuses",
+                        ParentTableColumn = "Articles.ArticleStatusID",
+                        JoinTableColumn = "ArticleStatuses.ArticleStatusID"
+                    },
+                    new PageJoinModel()
+                    {
+                        JoinType = "left join",
+                        JoinTable = "ArticleTypes",
+                        ParentTableColumn = "Articles.ArticleTypeID",
+                        JoinTableColumn = "ArticleTypes.ArticleTypeID"
+                    },
+                    new PageJoinModel()
+                    {
+                        JoinType = "left join",
+                        JoinTable = "ArticleViews",
+                        ParentTableColumn = "Articles.ArticleID",
+                        JoinTableColumn = "ArticleViews.ArticleID"
+                    }
+                });
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
         [HttpGet("table/dropdown/{tableName}/{columnName}")]
         public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false)
         {

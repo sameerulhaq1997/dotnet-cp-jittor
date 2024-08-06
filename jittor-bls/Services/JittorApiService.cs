@@ -301,9 +301,9 @@ namespace Jittor.App.Services
             }
             return result ? "ok" : "error";
         }
-        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null)
         {
-            var res = _jittorDataServices.GetPageLister(request);
+            var res = _jittorDataServices.GetPageLister(request, externalTable, externalSelectedColumns, externalJoins);
             return res;
         }
         public DropdownListerResponse PoplulateDropDowns(DropdownListerRequest request)
