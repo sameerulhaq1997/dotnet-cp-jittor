@@ -470,8 +470,8 @@ namespace Jittor.App.Services
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
 
-                var selectColumnId = (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id";
-                var sql = Sql.Builder.Append($"SELECT {(string.IsNullOrEmpty(externalSelectedColumns) ? selectColumnId : "")} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
+                var selectColumnId =  (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)
                 {
