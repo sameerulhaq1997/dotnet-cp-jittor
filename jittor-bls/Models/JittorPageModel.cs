@@ -328,12 +328,20 @@ namespace Jittor.App.Models
 
     public class DataListerRequest
     {
-        public int PageNumber { get; set; } = 1;
-        public int PageSize { get; set; } = 10;
+        public int? PageNumber { get; set; } = 1;
+        public int? PageSize { get; set; } = 10;
         public string? Sort { get; set; }
         public List<PageFilterModel>? Filters { get; set; } = null;
-        public int PageId { get; set; }
+        public int? PageId { get; set; }
     }
+    public class DropdownListerRequest : DataListerRequest
+    {
+        public bool? IsArgaamContext { get; set; }
+        public string? ColumnName { get; set; }
+        public string? TableName { get; set; }
+        public List<PageJoinModel>? Joins { get; set; }
+    }
+
     public class DataListerResponse<T>
     {
         public List<T> Items { get; set; } = new List<T>();
@@ -344,20 +352,15 @@ namespace Jittor.App.Models
         public int TotalPages => (int)Math.Ceiling((double)TotalItemCount / PageSize);
 
     }
-
-
-    public class DropdownListerRequest
-    {
-        public string? Sort { get; set; }
-        public bool? IsArgaamContext  { get; set; }
-        public List<PageFilterModel>? Filters { get; set; } = null;
-        public string ColumnName { get; set; }
-        public string TableName { get; set; }
-        public List<PageJoinModel>? Joins { get; set; }
-    }
     public class DropdownListerResponse
     {
         public List<FieldOption> Items { get; set; } = new List<FieldOption>();
+    }
+    public class BuildListerQueryResponse
+    {
+        public Sql Sql { get; set; }
+        public List<string> SelectColumnList { get; set; }
+        public Dictionary<string, string?> ColumnDictionary { get; set; }
     }
 
     public class JitPageTableExtended : JITPageTable
