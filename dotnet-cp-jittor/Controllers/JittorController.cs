@@ -97,12 +97,9 @@ namespace Jittor.Api.Controllers
                     PageNumber = pageNumber,
                     PageSize = pageSize,
                     Sort = sort ?? "Articles.ArticleID DESC",
-                    Filters = new List<PageFilterModel>()
-                    {
-
-                    }
+                    Filters = filters
                 };
-                var res = _jittorService.GetPageLister(request, "articles", "Articles.ArticleID ,Articles.Title,Articles.Author,ArticleTypes.NameEn As Type ,ArticleStatuses.NameEn As Status ,ArticleViews.ViewCount ", new List<PageJoinModel>()
+                var res = _jittorService.GetPageLister(request, "articles", "Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.NameEn,ArticleStatuses.NameEn As Status ,ArticleViews.ViewCount", new List<PageJoinModel>()
                 {
                     new PageJoinModel()
                     {
