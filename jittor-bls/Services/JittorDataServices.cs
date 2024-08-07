@@ -526,7 +526,7 @@ namespace Jittor.App.Services
                         var splittedKey = x.Split(".");
                         return new
                         {
-                            Field = splittedKey[1],
+                            Field = asColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
                             HeaderName = asColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
                             TableName = splittedKey[0],
                             Hideable= splittedKey[1] == "id" ? false : true,
