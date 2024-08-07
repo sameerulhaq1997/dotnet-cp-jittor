@@ -14,6 +14,7 @@ using System;
 using Newtonsoft.Json.Linq;
 using System.Transactions;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace Jittor.App.Services
 {
@@ -24,6 +25,8 @@ namespace Jittor.App.Services
         private Dictionary<string, List<JittorColumnInfo>> tableColumns = new Dictionary<string, List<JittorColumnInfo>>();
         private List<TableNode> tableNodes = new List<TableNode>();
         private readonly string _projectId;
+        private static readonly Regex ValidAliasRegex = new Regex(@"^[\w]+$", RegexOptions.Compiled);  // Allow alphanumeric and underscores
+
         public JittorDataServices(FrameworkRepository tableContext, string projectId, FrameworkRepository? secondaryTableContext = null)
         {
             _tableContext = tableContext;
@@ -446,7 +449,8 @@ namespace Jittor.App.Services
                 }
 
                 var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (string.IsNullOrEmpty(externalSelectedColumns) ? (table.TableName + ".*") : externalSelectedColumns) : table.SelectColumns;
-                var selectColumnList = selectClause.Split(',').ToList();
+                var selectColumnList = selectClause.Split(',').Select(x => x.Split("AS")[0].Trim()).ToList();
+                var asColumnDictionary = selectClause.Split(',').Select(column => column.Split(" AS ")).Where(parts => parts.Length == 2).ToDictionary(parts => parts[0], parts => ValidAlias(parts[1])) ?? new Dictionary<string, string?>();
 
                 var joins = externalJoins != null ? externalJoins : JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
 
@@ -470,8 +474,13 @@ namespace Jittor.App.Services
                     selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
                 }
 
+                var selectColumnsString = string.Join(',', selectColumnList.Select(column =>
+                {
+                    var alias = asColumnDictionary.GetValueOrDefault<string, string?>(column);
+                    return column + (alias == null ? "" : " AS " + alias);
+                }));
                 var selectColumnId =  (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
-                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
+                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {selectColumnsString} FROM {table.TableName} ");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
                 if (joins != null)
                 {
@@ -698,6 +707,14 @@ namespace Jittor.App.Services
                 }
             }
             return childTableNames;
+        }
+        private static string? ValidAlias(string alias)
+        {
+            if(ValidAliasRegex.IsMatch(alias))
+            {
+                return alias;
+            }
+            return null;
         }
         #endregion
     }

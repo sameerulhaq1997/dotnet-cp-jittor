@@ -99,7 +99,7 @@ namespace Jittor.Api.Controllers
                     Sort = sort ?? "Articles.ArticleID DESC",
                     Filters = filters
                 };
-                var res = _jittorService.GetPageLister(request, "articles", "Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.NameEn,ArticleStatuses.NameEn As Status ,ArticleViews.ViewCount", new List<PageJoinModel>()
+                var res = _jittorService.GetPageLister(request, "articles", "Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.NameEn AS ArticleTypeName,ArticleStatuses.NameEn AS ArticleStatusName,ArticleViews.ViewCount", new List<PageJoinModel>()
                 {
                     new PageJoinModel()
                     {
