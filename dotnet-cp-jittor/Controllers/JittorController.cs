@@ -90,6 +90,7 @@ namespace Jittor.Api.Controllers
             {
                 Request.Headers.TryGetValue("filters", out StringValues filtersString);
                 var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
+                var lang = filters != null ? filters.FirstOrDefault(x => x.Field == "Articles.LanguageID")?.Value ?? "1" : "1";
 
                 var request = new DataListerRequest()
                 {
@@ -99,7 +100,7 @@ namespace Jittor.Api.Controllers
                     Sort = sort ?? "Articles.ArticleID DESC",
                     Filters = filters
                 };
-                var res = _jittorService.GetPageLister(request, "articles", "Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.NameEn AS Type,ArticleStatuses.NameEn AS Status,ArticleViews.ViewCount", new List<PageJoinModel>()
+                var joins = new List<PageJoinModel>()
                 {
                     new PageJoinModel()
                     {
@@ -122,7 +123,29 @@ namespace Jittor.Api.Controllers
                         ParentTableColumn = "Articles.ArticleID",
                         JoinTableColumn = "ArticleViews.ArticleID"
                     }
-                });
+                };
+
+                if(filters != null && filters.Any(x => x.Field == "ArticleFeatures.IsModerate"))
+                {
+                    joins.Add(new PageJoinModel()
+                    {
+                        JoinType = "inner join",
+                        JoinTable = "ArticleFeatures",
+                        ParentTableColumn = "Articles.ArticleID",
+                        JoinTableColumn = "ArticleFeatures.ArticleID"
+                    });
+                }
+                if (filters != null && filters.Any(x => x.Field == "ArticleExtendedData.CreatedOn"))
+                {
+                    joins.Add(new PageJoinModel()
+                    {
+                        JoinType = "inner join",
+                        JoinTable = "ArticleExtendedData",
+                        ParentTableColumn = "Articles.ArticleID",
+                        JoinTableColumn = "ArticleExtendedData.ArticleID"
+                    });
+                }
+                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins);
                 return Ok(res);
             }
             catch (Exception ex)

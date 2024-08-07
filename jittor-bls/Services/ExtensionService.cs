@@ -173,6 +173,12 @@ namespace Jittor.App.Services
                     filter.Operator = "IN";
                     filter.Value = "(" + filter.Value + ")";
                     break;
+                case "greaterorequal":
+                    filter.Operator = ">=";
+                    break;
+                case "lessorequal":
+                    filter.Operator = "<=";
+                    break;
 
                 default:
                     throw new ArgumentException("Invalid operator type");

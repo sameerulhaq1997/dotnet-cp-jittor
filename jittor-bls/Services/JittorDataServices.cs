@@ -461,6 +461,8 @@ namespace Jittor.App.Services
 
                 var newRequest = new DropdownListerRequest()
                 {
+                    TableName = table.TableName,
+                    Joins = joins,
                     PageNumber = request.PageNumber,
                     PageSize = request.PageSize,
                     Sort = request.Sort,
@@ -664,7 +666,7 @@ namespace Jittor.App.Services
                 }));
             }
 
-            var primaryKey = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " AS Value, " : " AS id, ");
+            var primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " AS Value, " : " AS id, ");
             var sql = Sql.Builder.Append($"SELECT {primaryKey} {selectColumnsString} FROM {tableName} ");
 
             if (joins != null)
@@ -682,7 +684,7 @@ namespace Jittor.App.Services
             if (request.Filters != null && request.Filters.Count > 0)
             {
                 sql.Append(" WHERE ");
-                request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
+                request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
             }
 
             if (orders.Count() > 0)

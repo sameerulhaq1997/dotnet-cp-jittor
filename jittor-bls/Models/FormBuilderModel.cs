@@ -175,6 +175,7 @@ namespace Jittor.App.Models
         public string Operator { get; set; }
         public string? Value { get; set; }
         public string Operation { get; set; }
+        public bool? ExternalSearch { get; set; }
     }
     public class PageJoinModel
     {
