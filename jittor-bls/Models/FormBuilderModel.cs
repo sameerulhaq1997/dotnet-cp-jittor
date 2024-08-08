@@ -121,10 +121,10 @@ namespace Jittor.App.Models
         }
         public string FormName { get; set; }
         public List<string>? ClassesName { get; set; }
-        public string SoftDeleteColumn { get; set; }
+        public string? SoftDeleteColumn { get; set; }
         public bool ShowListing { get; set; }
         public bool ShowSearch { get; set; }
-        public string ListingTitle { get; set; }
+        public string? ListingTitle { get; set; }
         
         public string? Description { get; set; }
         public bool ShowFilters { get; set; }
