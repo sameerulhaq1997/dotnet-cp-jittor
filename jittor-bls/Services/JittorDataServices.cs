@@ -35,38 +35,45 @@ namespace Jittor.App.Services
         {
             return tableNodes;
         }
-        public async Task<JittorPageModel?> GetPageModel(string urlFriendlyPageName)
+        public async Task<JittorPageModel?> GetPageModel(string? urlFriendlyPageName = null, int? pageID = null)
         {
             List<JITAttributeType> types = await GetAttributeTypes();
             return await Executor.Instance.GetDataAsync<JittorPageModel?>(() =>
             {
-                using var context = DataContexts.GetJittorDataContext();
-                JittorPageModel? model = new JittorPageModel();
-                var sql = PetaPoco.Sql.Builder
-                    .Select(" * ")
-                    .From(" JITPages ")
-                    .Where($" UrlFriendlyName = @0 AND ProjectId = '{_projectId}'", urlFriendlyPageName);
-                model = context.Fetch<JittorPageModel>(sql).FirstOrDefault();
-                if (model != null)
-                {
-                    model.PageAttributes = context.Fetch<JITPageAttribute>($"Select * From JITPageAttributes Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
-                    model.PageTables = context.Fetch<JITPageTable>($"Select * From JITPageTables Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
-                    model.PageSections = context.Fetch<JITPageSection>($"Select * From JITPageSections Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
-                    var gids = model.PageAttributes.Select(x => x.DisplayGroupID).Distinct().ToArray();
-                    model.AttributeDisplayGroups = context.Fetch<AttributeDisplayGroup>("Select * From JITAttributeDisplayGroups D Inner Join JITDisplayGroupTypes T On D.DisplayGroupTypeID = T.DisplayGroupTypeID Where D.DisplayGroupID In(@0)", gids).ToList();
-                    Dictionary<string, object?> selectedRecord = new Dictionary<string, object?>();
+            using var context = DataContexts.GetJittorDataContext();
+            JittorPageModel? model = new JittorPageModel();
+            var sql = PetaPoco.Sql.Builder
+                .Select(" * ")
+                .From(" JITPages ");
+            if (urlFriendlyPageName != null)
+            {
+                sql.Where($" UrlFriendlyName = @0 AND ProjectId = '{_projectId}'", urlFriendlyPageName);
+            }
+            if (pageID != null)
+            {
+                sql.Where($" PageID = @0 AND ProjectId = '{_projectId}'", pageID);
+            }
+            model = context.Fetch<JittorPageModel>(sql).FirstOrDefault();
+            if (model != null)
+            {
+                model.PageAttributes = context.Fetch<JITPageAttribute>($"Select * From JITPageAttributes Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
+                model.PageTables = context.Fetch<JITPageTable>($"Select * From JITPageTables Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
+                model.PageSections = context.Fetch<JITPageSection>($"Select * From JITPageSections Where PageID = @0 AND ProjectId = '{_projectId}'", model.PageID).ToList();
+                var gids = model.PageAttributes.Select(x => x.DisplayGroupID).Distinct().ToArray();
+                model.AttributeDisplayGroups = context.Fetch<AttributeDisplayGroup>("Select * From JITAttributeDisplayGroups D Inner Join JITDisplayGroupTypes T On D.DisplayGroupTypeID = T.DisplayGroupTypeID Where D.DisplayGroupID In(@0)", gids).ToList();
+                Dictionary<string, object?> selectedRecord = new Dictionary<string, object?>();
 
-                    foreach (var att in model.PageAttributes.Where(x => x.Editable))
+                foreach (var att in model.PageAttributes.Where(x => x.Editable))
+                {
+                    var at = types.Where(x => x.AttributeTypeID == att.AttributeTypeID).First();
+                    if (!selectedRecord.ContainsKey(att.AttributeName))
                     {
-                        var at = types.Where(x => x.AttributeTypeID == att.AttributeTypeID).First();
-                        if (!selectedRecord.ContainsKey(att.AttributeName))
-                        {
-                            selectedRecord.Add(att.AttributeName, at.GetDefaultValue());
-                        }
+                        selectedRecord.Add(att.AttributeName, at.GetDefaultValue());
                     }
-                    model.SelectedRecord = selectedRecord;
                 }
-                return model;
+                model.SelectedRecord = selectedRecord;
+            }
+            return model;
 
             }, new { urlFriendlyPageName }, 5);
         }
@@ -221,7 +228,7 @@ namespace Jittor.App.Services
             return tableColumnList;
         }
 
-        
+
         public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
             var tablesToGet = GetAllRelatedTables(tableName);
@@ -258,18 +265,18 @@ namespace Jittor.App.Services
                     tr.Complete();
                     return true;
                 }
-            } 
+            }
             catch (Exception ex)
             {
                 return false;
             }
         }
-        public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)
+        public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId = 0)
         {
             return await Executor.Instance.GetDataAsync<List<FormBuilderListerModel>>(() =>
             {
-            using var context = DataContexts.GetJittorDataContext();
-            var sql = PetaPoco.Sql.Builder.Append(@"SELECT p.PageName,p.UrlFriendlyName,p.Title,
+                using var context = DataContexts.GetJittorDataContext();
+                var sql = PetaPoco.Sql.Builder.Append(@"SELECT p.PageName,p.UrlFriendlyName,p.Title,
                 STUFF((SELECT ', ' + t1.TableName
                FROM JITPageTables t1
                WHERE t1.PageID = p.PageID and t1.ForOperation = 1
@@ -280,9 +287,76 @@ namespace Jittor.App.Services
                FOR XML PATH (''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ForView
                 FROM 
                     JITPages p
-                WHERE 
-                    p.PageID = @0 AND ProjectId = '" + _projectId + "'", pageId);
-            return context.Fetch<FormBuilderListerModel>(sql).ToList();
+                WHERE ProjectId = @0", _projectId);
+                if (pageId != 0)
+                {
+                    sql = sql.Append(@" AND p.PageID = @0", pageId);
+                }
+                return context.Fetch<FormBuilderListerModel>(sql).ToList();
+            }, 5);
+        }
+        public async Task<FormPageModel> GetFormBuilderPageData(int pageId)
+        {
+            //return await Executor.Instance.GetDataAsync<FormPageModel>(() =>
+            //{
+            using var context = DataContexts.GetJittorDataContext();
+            JittorPageModel? model = GetPageModel(null, pageId).Result;
+            FormPageModel formPage = new FormPageModel();
+            formPage.Form = JittorMapperHelper.Map<Form, JITPageTable>(model.PageTables.FirstOrDefault(x => x.ForView == true)); //model.PageTables;
+            formPage.Form.FormName = model.PageName;
+            foreach (var jitSection in model.PageSections)
+            {
+                var formSection = new FormSection();
+                formSection.Fields = new List<FieldModel>();
+                formSection = JittorMapperHelper.Map<FormSection, JITPageSection>(jitSection);
+                foreach (var jitAttr in model.PageAttributes.Where(x => x.SectionId == jitSection.PageSectionId))
+                {
+                    var field = new FieldModel();
+                    field = JittorMapperHelper.Map<FieldModel, JITPageAttribute>(jitAttr);
+                    field.TableName = model.PageTables.FirstOrDefault(x => x.TableID == field.TableId).TableName;
+                    formSection.Fields.Add(field);
+                }
+                formPage.Sections.Add(formSection);
+            }
+            formPage.ProjectId = formPage.Form.ProjectId;
+
+            var allFields = formPage.Sections.SelectMany(section => section.Fields).ToList();
+            
+            foreach (var tbl in model.PageTables.Distinct())
+            {
+                var formTable = new FormTable();
+                formTable.Label = tbl.TableName;
+                formTable.Value = tbl.TableName; //allFields.Where(x => x.TableId == tbl.TableID).ToList();
+
+
+
+                formPage.Form.FormTables.Add(formTable);
+            }
+            formPage.Form.ShowListing = (formPage.Form.Joins != null || formPage.Form.Filters != null || formPage.Form.SelectColumns != null || 
+                formPage.Form.Orders != null || formPage.Form.CurrentPage != null || formPage.Form.RecordsPerPage != null || formPage.Form.ShowSearch == true || 
+                formPage.Form.ShowFilters == true || formPage.Form.ListingTitle != null) ? true : false;
+            return formPage;
+            //}, 5);
+        }
+        public async Task<List<dynamic>> GetFormBuilderAllData()
+        {
+            return await Executor.Instance.GetDataAsync<List<dynamic>>(() =>
+            {
+                using var context = DataContexts.GetJittorDataContext();
+                var sql = PetaPoco.Sql.Builder.Append(@"SELECT p.PageID AS id,p.PageName,p.UrlFriendlyName,p.Title,
+                STUFF((SELECT ', ' + t1.TableName
+               FROM JITPageTables t1
+               WHERE t1.PageID = p.PageID and t1.ForOperation = 1
+               FOR XML PATH (''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ForOperation,
+                STUFF((SELECT ', ' + t1.TableName
+               FROM JITPageTables t1
+               WHERE t1.PageID = p.PageID  and t1.ForView = 1
+               FOR XML PATH (''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ForView
+                FROM 
+                    JITPages p
+                WHERE ProjectId = @0", _projectId);
+
+                return context.Fetch<dynamic>(sql).ToList();
             }, 5);
         }
         public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname, object ChartId)

@@ -4,6 +4,7 @@ using Jittor.App.Models;
 using Jittor.Shared.Enums;
 using Newtonsoft.Json;
 using PetaPoco;
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using static Jittor.App.DataServices.FrameworkRepository;
 using static Jittor.App.Models.ProcessEntityModel;
@@ -311,10 +312,39 @@ namespace Jittor.App.Services
             var res = _jittorDataServices.PoplulateDropDowns(request);
             return res;
         }
-        public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId)
+        public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId = 0)
         {
             var res = await _jittorDataServices.GetFormBuilderLister(pageId);
             return res;
+        }
+        public async Task<FormPageModel> GetFormBuilderPageData(int pageId = 0)
+        {
+            var res = await _jittorDataServices.GetFormBuilderPageData(pageId);
+            return res;
+        }
+        public async Task<DataListerResponse<dynamic>> GetFormBuilderLister()
+        {
+            var dataItems = await _jittorDataServices.GetFormBuilderAllData();
+            var columns = new List<string>() { "id","PageName", "UrlFriendlyName", "Title", "ForOperation", "ForView" };
+            return new DataListerResponse<dynamic>()
+            {
+                Items = dataItems,
+                PageNumber = 1,//request.PageNumber,
+                PageSize = 10,//pageSize,
+                TotalItemCount = dataItems.Count(),
+                Columns = columns.Select(x =>
+                {
+                    
+                    return new
+                    {
+                        Field = x,
+                        HeaderName = x,
+                        TableName = x,
+                        Hideable = x == "id" ? false : true,
+                    };
+                }).ToList(),
+                //PageName = table.UrlFriendlyName
+            };
         }
     }
 }

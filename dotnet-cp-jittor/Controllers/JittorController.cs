@@ -111,9 +111,21 @@ namespace Jittor.Api.Controllers
             }
         }
         [HttpGet("form-builder/lister/{pageId}")]
-        public async Task<IActionResult> GetFormBuilderLister(int pageId)
+        public async Task<IActionResult> GetFormBuilderLister(int pageId = 0)
         {
             var res = await _jittorService.GetFormBuilderLister(pageId);
+            return Ok(res);
+        }
+        [HttpGet("form-builder/edit/{pageId}")]
+        public async Task<IActionResult> GetFormBuilderPageData(int pageId)//Load Form Builder Edit Page
+        {
+            var res = await _jittorService.GetFormBuilderPageData(pageId);
+            return Ok(res);
+        }
+        [HttpGet("form-builder/lister")]
+        public async Task<IActionResult> GetFormBuilderLister()
+        {
+            var res = await _jittorService.GetFormBuilderLister();
             return Ok(res);
         }
         [HttpGet("tables")]
@@ -129,7 +141,7 @@ namespace Jittor.Api.Controllers
             var jitorTableModel = await _jittorService.GetAllPages();
             return Ok(jitorTableModel);
         }
-        [HttpPost("page/deleteForm/{pageID}")]
+        [HttpDelete("page/deleteForm/{pageID}")]
         public async Task<IActionResult> DeleteForm(int pageID)
         {
             var res = await _jittorService.DeleteForm(pageID);
