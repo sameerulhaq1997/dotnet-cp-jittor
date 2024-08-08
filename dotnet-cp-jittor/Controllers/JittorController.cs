@@ -237,7 +237,6 @@ namespace Jittor.Api.Controllers
             var res = await _jittorService.DeleteForm(pageID);
             return Ok(res);
         }
-
         private DynamicExtender GetExtandered(string name)
         {
             var obj = Activator.CreateInstance("Jittor.Api", string.Format("dotnet_cp_jitter.Extender.{0}", name));
