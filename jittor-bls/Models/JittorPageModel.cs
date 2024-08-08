@@ -340,6 +340,7 @@ namespace Jittor.App.Models
         public string? ColumnName { get; set; }
         public string? TableName { get; set; }
         public List<PageJoinModel>? Joins { get; set; }
+        public bool? IsDistinct { get; set; }
     }
 
     public class DataListerResponse<T>

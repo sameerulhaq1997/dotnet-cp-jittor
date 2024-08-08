@@ -6,14 +6,18 @@ namespace dotnet_cp_jitter.Extender
 
     public abstract  class DynamicExtender
     {
-        public virtual string ExecuteExternalScripts(List<PageFilterModel> filters) { return string.Empty; }
+        public virtual string ExecuteExternalScripts(List<PageFilterModel>? filters) { return string.Empty; }
     }
 
     public  class ArticleListerExtender : DynamicExtender
     {
-        public override string ExecuteExternalScripts(List<PageFilterModel> filters)
+        public override string ExecuteExternalScripts(List<PageFilterModel>? filters)
         {
             var query = "";
+            if(filters == null)
+            {
+                return query;
+            }
 
             var marketId = filters.FirstOrDefault(x => x.Field == "MarketID")?.Value;
             var companyId = filters.FirstOrDefault(x => x.Field == "CompanyID")?.Value;

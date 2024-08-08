@@ -161,7 +161,7 @@ namespace Jittor.Api.Controllers
                 if (filters != null && filters.Any(x => x.ExternalSearch == true))
                     extender = this.GetExtandered("ArticleListerExtender");
 
-                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender.ExecuteExternalScripts(filters));
+                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender == null ? null : extender.ExecuteExternalScripts(filters));
                 return Ok(res);
             }
             catch (Exception ex)
@@ -172,7 +172,7 @@ namespace Jittor.Api.Controllers
 
 
         [HttpGet("table/dropdown/{tableName}/{columnName}")]
-        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false)
+        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false, bool? isDistinct = false)
         {
             try
             {
@@ -189,7 +189,8 @@ namespace Jittor.Api.Controllers
                     Sort = sort,
                     Filters = filters,
                     Joins = joins,
-                    IsArgaamContext = isArgaamContext
+                    IsArgaamContext = isArgaamContext,
+                    IsDistinct = isDistinct
                 };
                 var res = _jittorService.PoplulateDropDowns(request);
                 return Ok(res);

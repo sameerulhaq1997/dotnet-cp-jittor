@@ -171,7 +171,7 @@ namespace Jittor.App.Services
 
                 case "isanyof":
                     filter.Operator = "IN";
-                    filter.Value = "(" + filter.Value + ")";
+                    filter.Value = filter.Value;
                     break;
                 case "greaterorequal":
                     filter.Operator = ">=";
@@ -183,7 +183,13 @@ namespace Jittor.App.Services
                 default:
                     throw new ArgumentException("Invalid operator type");
             }
-            return sql.Append($" {(index == 0 ? "" : filter.Operation)} {filter.Field} {filter.Operator} @0 ", filter.Value ?? "");
+            if(filter.Operator == "IN")
+            {
+                var param = filter.Value!.Split(',').Select((x, index) => "@" + index);
+                var values = filter.Value!.Split(',').Select((x, index) => x);
+                return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} ( @0 )) ", values);
+            }
+            return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} @0 ) ", filter.Value ?? "");
         }
 
         public static List<string> ValidateTableColumns(this List<string> value, List<JittorColumnInfo> columns, bool isOrderBy = false)

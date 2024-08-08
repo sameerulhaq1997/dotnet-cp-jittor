@@ -234,7 +234,7 @@ namespace Jittor.App.Services
 
         public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
-            var tablesToGet = GetAllRelatedTables(tableName);
+            var tablesToGet = context == null ? GetAllRelatedTables(tableName) : tableName.ToLower().Split(",").ToList();
             var parentData = GetTableSchema(tablesToGet, schemaName, context);
             return parentData;
 
@@ -504,7 +504,7 @@ namespace Jittor.App.Services
                 return false;
             }
         }
-        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null,string externalScripts=null)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null,string? externalScripts = null)
         {
             try
             {
@@ -715,7 +715,8 @@ namespace Jittor.App.Services
             var tableName = request.TableName;
             request.TableName = (request.TableName ?? "").Split(".").Length == 2 ? (request.TableName ?? "").Split(".")[1] : request.TableName;
 
-            var tableColumns = GetTableAndChildTableColumns(request.TableName ?? "", "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
+            var tables = request.IsArgaamContext == true ? request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "") : request.TableName;
+            var tableColumns = GetTableAndChildTableColumns(tables ?? "", "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
             selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
             request.Filters = request.Filters != null ? request.Filters.ValidateTableColumns(tableColumns) : new List<PageFilterModel>();
 
@@ -764,12 +765,13 @@ namespace Jittor.App.Services
                 if(!string.IsNullOrEmpty(externalScripts))
                     sql.Append(externalScripts);
             }
-
-
-            if (orders.Count() > 0)
-                sql.OrderBy(string.Join(',', orders));
-            else
-                sql.OrderBy((tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + " DESC ");
+           
+            var orderString = orders.Count() > 0 ? string.Join(',', orders) : (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + " DESC ";
+            if (request.IsDistinct == true)
+            {
+                sql.Append($" GROUP BY {primaryKey.ToLower().Split("as")[0].Replace("," , "")}, {selectColumnsString.ToLower().Split("as")[0].Replace(",", "")}, {orderString.Split(" ")[0]} ");
+            }
+            sql.OrderBy(orderString);
 
             if (!isDropDown)
             {
