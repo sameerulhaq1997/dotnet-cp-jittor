@@ -430,7 +430,7 @@ namespace Jittor.App.Services
                 return false;
             }
         }
-        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null,string externalScripts=null)
         {
             try
             {
@@ -469,7 +469,7 @@ namespace Jittor.App.Services
                     Filters = request.Filters,
                     PageId = request.PageId,
                 };
-                var listerQuery = BuildListerQuery(newRequest, selectClause, joins);
+                var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
                 var list = tableContext.Fetch<dynamic>(listerQuery.Sql).ToList();
 
                 listerQuery.SelectColumnList.Add(table.TableName + ".id");
@@ -509,7 +509,7 @@ namespace Jittor.App.Services
                 var joins = request.Joins ?? new List<PageJoinModel>();
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
 
-                var listerQuery = BuildListerQuery(request, (request.ColumnName ?? ""), joins, true);
+                var listerQuery = BuildListerQuery(request, (request.ColumnName ?? ""), joins,null, true);
                 var list = tableContext.Fetch<FieldOption>(listerQuery.Sql).ToList();
 
                 return new DropdownListerResponse()
@@ -631,7 +631,7 @@ namespace Jittor.App.Services
             }
             return null;
         }
-        public BuildListerQueryResponse BuildListerQuery(DropdownListerRequest request, string selectClause, List<PageJoinModel>? joins = null, bool isDropDown = false)
+        public BuildListerQueryResponse BuildListerQuery(DropdownListerRequest request, string selectClause, List<PageJoinModel>? joins = null,string? externalScripts = null, bool isDropDown = false)
         {
             List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
 
@@ -681,11 +681,16 @@ namespace Jittor.App.Services
                     }
                 }
             }
-            if (request.Filters != null && request.Filters.Count > 0)
+
+            if ((request.Filters != null && request.Filters.Count > 0) || !string.IsNullOrEmpty(externalScripts))
             {
                 sql.Append(" WHERE ");
-                request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
+                if((request.Filters != null && request.Filters.Count > 0))
+                    request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
+                if(!string.IsNullOrEmpty(externalScripts))
+                    sql.Append(externalScripts);
             }
+
 
             if (orders.Count() > 0)
                 sql.OrderBy(string.Join(',', orders));

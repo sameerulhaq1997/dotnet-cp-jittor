@@ -9,6 +9,7 @@ using Jittor.App.Services;
 using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using dotnet_cp_jitter.Extender;
 
 namespace Jittor.Api.Controllers
 {
@@ -145,7 +146,22 @@ namespace Jittor.Api.Controllers
                         JoinTableColumn = "ArticleExtendedData.ArticleID"
                     });
                 }
-                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins);
+                if (filters != null && filters.Any(x => x.Field == "MarketID" || x.Field == "CompanyID" || x.Field == "SectorID" || x.Field == "ArgaamSectorID"))
+                {
+                    joins.Add(new PageJoinModel()
+                    {
+                        JoinType = "inner join",
+                        JoinTable = "ArticleRelatedToEntities",
+                        ParentTableColumn = "Articles.ArticleID",
+                        JoinTableColumn = "ArticleRelatedToEntities.ArticleID"
+                    });
+                }
+
+                 DynamicExtender? extender = null;
+                if (filters != null && filters.Any(x => x.ExternalSearch == true))
+                    extender = this.GetExtandered("ArticleListerExtender");
+
+                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender.ExecuteExternalScripts(filters));
                 return Ok(res);
             }
             catch (Exception ex)
@@ -207,6 +223,12 @@ namespace Jittor.Api.Controllers
         {
             var res = await _jittorService.DeleteForm(pageID);
             return Ok(res);
+        }
+
+        private DynamicExtender GetExtandered(string name)
+        {
+            var obj = Activator.CreateInstance("Jittor.Api", string.Format("dotnet_cp_jitter.Extender.{0}", name));
+            return (DynamicExtender)obj.Unwrap();
         }
     }
 }
