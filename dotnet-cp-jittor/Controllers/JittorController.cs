@@ -161,7 +161,7 @@ namespace Jittor.Api.Controllers
                 if (filters != null && filters.Any(x => x.ExternalSearch == true))
                     extender = this.GetExtandered("ArticleListerExtender");
 
-                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender.ExecuteExternalScripts(filters));
+                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender == null ? null : extender.ExecuteExternalScripts(filters));
                 return Ok(res);
             }
             catch (Exception ex)
@@ -236,7 +236,6 @@ namespace Jittor.Api.Controllers
             var res = await _jittorService.DeleteForm(pageID);
             return Ok(res);
         }
-
         private DynamicExtender GetExtandered(string name)
         {
             var obj = Activator.CreateInstance("Jittor.Api", string.Format("dotnet_cp_jitter.Extender.{0}", name));
