@@ -105,12 +105,20 @@ namespace Jittor.App.Models
     }
     public class FormPageModel
     {
+        public FormPageModel()
+        {
+            Sections = new List<FormSection>();   
+        }
         public Form Form { get; set; }
         public List<FormSection> Sections { get; set; }
         public string? ProjectId { get; set; }
     }
     public class Form
     {
+        public Form()
+        {
+            FormTables = new List<FormTable>();
+        }
         public string FormName { get; set; }
         public List<string>? ClassesName { get; set; }
         public string SoftDeleteColumn { get; set; }
@@ -133,6 +141,7 @@ namespace Jittor.App.Models
         public int PageID { get; set; }
         public string? ProjectId { get; set; }
         public bool ForView { get; set; }
+        public List<FormTable>? FormTables { get; set; }
     }
     public class FormSection
     {
@@ -149,6 +158,12 @@ namespace Jittor.App.Models
         public List<FieldModel> Fields { get; set; }
         public string? ProjectId { get; set; }
         public int PageID { get; set; }
+
+    }
+    public class FormTable
+    {
+        public string Value { get; set; }
+        public string Label { get; set; }
 
     }
 
