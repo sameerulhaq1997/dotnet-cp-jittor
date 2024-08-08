@@ -14,6 +14,7 @@ using System;
 using Newtonsoft.Json.Linq;
 using System.Transactions;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace Jittor.App.Services
 {
@@ -24,6 +25,8 @@ namespace Jittor.App.Services
         private Dictionary<string, List<JittorColumnInfo>> tableColumns = new Dictionary<string, List<JittorColumnInfo>>();
         private List<TableNode> tableNodes = new List<TableNode>();
         private readonly string _projectId;
+        private static readonly Regex ValidAliasRegex = new Regex(@"^[\w]+$", RegexOptions.Compiled);  // Allow alphanumeric and underscores
+
         public JittorDataServices(FrameworkRepository tableContext, string projectId, FrameworkRepository? secondaryTableContext = null)
         {
             _tableContext = tableContext;
@@ -501,96 +504,64 @@ namespace Jittor.App.Services
                 return false;
             }
         }
-        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request)
+        public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null,string externalScripts=null)
         {
             try
             {
-                List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
-                var table = context.Fetch<JITPageTable>($"SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1 AND ProjectId = '{_projectId}'", request.PageId).FirstOrDefault();
+                var table = new JITPageTable();
+                if (externalTable != null)
+                    table.TableName = externalTable;
+                else
+                    table = context.Fetch<JITPageTable>($"SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1 AND ProjectId = '{_projectId}'", request.PageId ?? 0).FirstOrDefault();
                 if (table == null)
                 {
                     return new DataListerResponse<dynamic>();
                 }
 
-                var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (table.TableName + ".*") : table.SelectColumns;
-                var selectColumnList = selectClause.Split(',').ToList();
-
-                var joins = JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
-
+                var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (string.IsNullOrEmpty(externalSelectedColumns) ? (table.TableName + ".*") : externalSelectedColumns) : table.SelectColumns;
+                var joins = externalJoins != null ? externalJoins : JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
-                if(!string.IsNullOrEmpty(table.Filters))
-                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters) ?? new List<PageFilterModel>()).ToList();
-
-                string orderString = "";
+                if (!string.IsNullOrEmpty(table.Filters))
+                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters ?? "[]") ?? new List<PageFilterModel>()).ToList();
                 if (table.Orders != null || request.Sort != null)
-                    orderString = request.Sort ?? (table.Orders ?? "");
+                    request.Sort = request.Sort ?? (table.Orders ?? "");
+                request.PageSize = (table.Page > 0 ? table.Page.Value : request.PageSize ?? 0);
 
-                var tableColumns = GetTableAndChildTableColumns(table.TableName);
-                selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
-                request.Filters = request.Filters.ValidateTableColumns(tableColumns);
-                var orders = orderString.Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList().ValidateTableColumns(tableColumns, true);
-
-                if (selectColumnList.Any(x => x.Contains("*")))
-                {
-                    selectColumnList.AddRange(tableColumns.Where(y => selectColumnList.Where(x => x.Contains("*")).Select(x => x.Replace(".*", "").Trim()).Contains(y.TableName)).Select(x => x.TableName + "." + x.ColumnName).ToList());
-                    selectColumnList.RemoveAll(x => x.Contains("*"));
-                    selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
-                }
-
-                var selectColumnId = (table.TableName + "." + tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " AS id, ";
-                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {string.Join(',', selectColumnList)} FROM {table.TableName} ");
                 var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
-                if (joins != null)
+
+
+                var newRequest = new DropdownListerRequest()
                 {
-                    foreach (var join in joins.ValidateTableColumns(tableColumns))
-                    {
-                        bool tableExists = tableColumns.Select(x => x.TableName).Contains(join.JoinTable);
+                    TableName = table.TableName,
+                    Joins = joins,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize,
+                    Sort = request.Sort,
+                    Filters = request.Filters,
+                    PageId = request.PageId,
+                };
+                var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
+                var list = tableContext.Fetch<dynamic>(listerQuery.Sql).ToList();
 
-                        if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
-                        {
-                            sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
-                        }
-                    }
-                }
-                if (request.Filters.Count > 0)
-                {
-                    sql.Append(" WHERE ");
-                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
-                }
-
-                if (orders.Count() > 0)
-                    sql.OrderBy(string.Join(',', orders));
-                else
-                    sql.OrderBy((tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == table.TableName.ToLower())!.ColumnName ?? "") + " DESC ");
-
-                int pageSize = (table.Page > 0 ? table.Page.Value : request.PageSize);
-                int offset = (request.PageNumber - 1) * pageSize;
-                sql.Append($" OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY ");
-
-                var list = tableContext.Fetch<dynamic>(sql).ToList();
-                List<string> columns = new List<string>();
-                if (list.Count > 0)
-                    columns = ((IDictionary<string, object>)list[0]).Keys.ToList();
-
-                selectColumnList.Add(table.TableName + ".id");
+                listerQuery.SelectColumnList.Add(table.TableName + ".id");
                 return new DataListerResponse<dynamic>()
                 {
                     Items = list,
-                    PageNumber = request.PageNumber,
-                    PageSize = pageSize,
+                    PageNumber = request.PageNumber ?? 0,
+                    PageSize = request.PageSize ?? 0,
                     TotalItemCount = count,
-                    Columns = selectColumnList.Select(x =>
+                    Columns = listerQuery.SelectColumnList.Select(x =>
                     {
                         var splittedKey = x.Split(".");
                         return new
                         {
-                            Field = splittedKey[1],
-                            HeaderName = splittedKey[1],
+                            Field = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
+                            HeaderName = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
                             TableName = splittedKey[0],
-                            Hideable= splittedKey[1] == "id" ? false : true,
+                            Hideable = splittedKey[1] == "id" ? false : true,
                         };
                     }).ToList(),
                     //PageName = table.UrlFriendlyName
@@ -606,58 +577,15 @@ namespace Jittor.App.Services
         {
             try
             {
-                List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
                 using var tableContext = request.IsArgaamContext == true ? _secondaryTableContext ?? _tableContext : _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
-                var selectColumnList = request.ColumnName.Split(',').ToList();
                 var joins = request.Joins ?? new List<PageJoinModel>();
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
 
-                var tableName = request.TableName;
-                request.TableName = request.TableName.Split(".").Length == 2 ? request.TableName.Split(".")[1] : request.TableName;
+                var listerQuery = BuildListerQuery(request, (request.ColumnName ?? ""), joins,null, true);
+                var list = tableContext.Fetch<FieldOption>(listerQuery.Sql).ToList();
 
-                var tableColumns = GetTableAndChildTableColumns(request.TableName, "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
-                selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
-                request.Filters = request.Filters.ValidateTableColumns(tableColumns);
-
-                string orderString = request.Sort ?? "";
-                var orders = orderString.Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList().ValidateTableColumns(tableColumns, true);
-
-                if (selectColumnList.Any(x => x.Contains("*")))
-                {
-                    selectColumnList.AddRange(tableColumns.Where(y => selectColumnList.Where(x => x.Contains("*")).Select(x => x.Replace(".*", "").Trim()).Contains(y.TableName)).Select(x => x.TableName + "." + x.ColumnName).ToList());
-                    selectColumnList.RemoveAll(x => x.Contains("*"));
-                    selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
-                }
-                string label = selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL({column}, '')")) : (selectColumnList.FirstOrDefault() ?? "");
-                var selectColumnId = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == request.TableName.ToLower())!.ColumnName ?? "") + " AS Value, ";
-                var sql = Sql.Builder.Append($"SELECT {selectColumnId} {label + " as Label"} FROM {tableName} ");
-                if (joins != null)
-                {
-                    foreach (var join in joins.ValidateTableColumns(tableColumns))
-                    {
-                        bool tableExists = tableColumns.Select(x => x.TableName).Contains(join.JoinTable);
-
-                        if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
-                        {
-                            sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
-                        }
-                    }
-                }
-                if (request.Filters.Count > 0)
-                {
-                    sql.Append(" WHERE ");
-                    request.Filters.ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
-                }
-
-                if (orders.Count() > 0)
-                    sql.OrderBy(string.Join(',', orders));
-                else
-                    sql.OrderBy((tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == request.TableName.ToLower())!.ColumnName ?? "") + " DESC ");
-
-
-                var list = tableContext.Fetch<FieldOption>(sql).ToList();
                 return new DropdownListerResponse()
                 {
                     Items = list
@@ -769,6 +697,93 @@ namespace Jittor.App.Services
             }
             return childTableNames;
         }
+        private static string? ValidAlias(string alias)
+        {
+            if(ValidAliasRegex.IsMatch(alias))
+            {
+                return alias;
+            }
+            return null;
+        }
+        public BuildListerQueryResponse BuildListerQuery(DropdownListerRequest request, string selectClause, List<PageJoinModel>? joins = null,string? externalScripts = null, bool isDropDown = false)
+        {
+            List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
+
+            var selectColumnList = selectClause.Split(',').Select(x => x.Split("AS")[0].Trim()).ToList();
+            var asColumnDictionary = selectClause.Split(',').Select(column => column.Split(" AS ")).Where(parts => parts.Length == 2).ToDictionary(parts => parts[0], parts => ValidAlias(parts[1])) ?? new Dictionary<string, string?>();
+
+            var tableName = request.TableName;
+            request.TableName = (request.TableName ?? "").Split(".").Length == 2 ? (request.TableName ?? "").Split(".")[1] : request.TableName;
+
+            var tableColumns = GetTableAndChildTableColumns(request.TableName ?? "", "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
+            selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
+            request.Filters = request.Filters != null ? request.Filters.ValidateTableColumns(tableColumns) : new List<PageFilterModel>();
+
+            var orders = (request.Sort ?? "").Split(",").Where(x => !string.IsNullOrEmpty(x)).ToList().ValidateTableColumns(tableColumns, true);
+
+            if (selectColumnList.Any(x => x.Contains("*")))
+            {
+                selectColumnList.AddRange(tableColumns.Where(y => selectColumnList.Where(x => x.Contains("*")).Select(x => x.Replace(".*", "").Trim()).Contains(y.TableName)).Select(x => x.TableName + "." + x.ColumnName).ToList());
+                selectColumnList.RemoveAll(x => x.Contains("*"));
+                selectColumnList = selectColumnList.GroupBy(x => x.Split(".")[1]).Select(x => x.FirstOrDefault() ?? "").ToList();
+            }
+
+            string selectColumnsString = "";
+            if (isDropDown)
+                selectColumnsString = (selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL({column}, '')")) : (selectColumnList.FirstOrDefault() ?? "")) + " as Label";
+            else
+            {
+                selectColumnsString = string.Join(',', selectColumnList.Select(column =>
+                {
+                    var alias = asColumnDictionary.GetValueOrDefault<string, string?>(column);
+                    return column + (alias == null ? "" : " AS " + alias);
+                }));
+            }
+
+            var primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " AS Value, " : " AS id, ");
+            var sql = Sql.Builder.Append($"SELECT {primaryKey} {selectColumnsString} FROM {tableName} ");
+
+            if (joins != null)
+            {
+                foreach (var join in joins.ValidateTableColumns(tableColumns))
+                {
+                    bool tableExists = tableColumns.Select(x => x.TableName).Contains(join.JoinTable);
+
+                    if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
+                    {
+                        sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
+                    }
+                }
+            }
+
+            if ((request.Filters != null && request.Filters.Count > 0) || !string.IsNullOrEmpty(externalScripts))
+            {
+                sql.Append(" WHERE ");
+                if((request.Filters != null && request.Filters.Count > 0))
+                    request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
+                if(!string.IsNullOrEmpty(externalScripts))
+                    sql.Append(externalScripts);
+            }
+
+
+            if (orders.Count() > 0)
+                sql.OrderBy(string.Join(',', orders));
+            else
+                sql.OrderBy((tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + " DESC ");
+
+            if (!isDropDown)
+            {
+                int offset = ((request.PageNumber ?? 0) - 1) * (request.PageSize ?? 0);
+                sql.Append($" OFFSET {offset} ROWS FETCH NEXT {(request.PageSize ?? 0)} ROWS ONLY ");
+            }
+            return new BuildListerQueryResponse()
+            {
+                Sql = sql,
+                SelectColumnList = selectColumnList,
+                ColumnDictionary = asColumnDictionary
+            };
+        }
+
         #endregion
     }
     public class TableRelationship
