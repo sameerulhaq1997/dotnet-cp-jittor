@@ -627,10 +627,11 @@ namespace Jittor.App.Services
         TP.name AS ParentTable,
         TR.name AS ChildTable
     FROM 
+        sys.tables AS TP 
+    LEFT JOIN 
         sys.foreign_keys AS FK
-    INNER JOIN 
-        sys.tables AS TP ON FK.referenced_object_id = TP.object_id
-    INNER JOIN 
+        ON FK.referenced_object_id = TP.object_id
+    LEFT JOIN 
         sys.tables AS TR ON FK.parent_object_id = TR.object_id
     ORDER BY 
         TP.name, TR.name;
@@ -646,7 +647,7 @@ namespace Jittor.App.Services
             // Create a dictionary for all tables with empty child lists
             var tableDict = relationships
                 .SelectMany(r => new[] { r.ParentTable, r.ChildTable })
-                .Distinct()
+                .Distinct().Where(x => x != null)
                 .ToDictionary(t => t, t => new TableNode { TableName = t });
 
             // Populate child nodes recursively
@@ -681,7 +682,7 @@ namespace Jittor.App.Services
                 .ToList();
 
             var parentNode = tableDict[parentTable];
-            foreach (var rel in childRelationships)
+            foreach (var rel in childRelationships.Where(x => x.ChildTable != null))
             {
                 var childNode = tableDict[rel.ChildTable];
                 parentNode.ChildTables.Add(childNode);
