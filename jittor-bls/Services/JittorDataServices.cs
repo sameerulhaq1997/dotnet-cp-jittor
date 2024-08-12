@@ -307,6 +307,12 @@ namespace Jittor.App.Services
             FormPageModel formPage = new FormPageModel();
             formPage.Form = JittorMapperHelper.Map<Form, JITPageTable>(model.PageTables.FirstOrDefault(x => x.ForView == true)); //model.PageTables;
             formPage.Form.FormName = model.PageName;
+            formPage.Form.CurrentPage = model.CurrentPage;
+            formPage.Form.RecordsPerPage = model.RecordsPerPage;
+            formPage.Form.Extender = model.Extender;
+            formPage.Form.SoftDeleteColumn = model.SoftDeleteColumn;
+            formPage.Form.Description = model.Description;
+            formPage.Form.ListingTitle = model.ListingTitle;
             foreach (var jitSection in model.PageSections)
             {
                 var formSection = new FormSection();

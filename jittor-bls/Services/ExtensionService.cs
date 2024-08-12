@@ -189,7 +189,7 @@ namespace Jittor.App.Services
                 var values = filter.Value!.Split(',').Select((x, index) => x);
                 return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} ( @0 )) ", values);
             }
-            return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} @0 ) ", filter.Value ?? "");
+            return sql.Append($" {(index == 0 ? "" : string.IsNullOrEmpty(filter.Operation) ? "AND" : filter.Operation)} ({filter.Field} {filter.Operator} @0 ) ", filter.Value ?? "");
         }
 
         public static List<string> ValidateTableColumns(this List<string> value, List<JittorColumnInfo> columns, bool isOrderBy = false)
