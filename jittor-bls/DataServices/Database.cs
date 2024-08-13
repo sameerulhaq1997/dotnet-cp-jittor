@@ -231,6 +231,7 @@ namespace Jittor.App.DataServices
             [Column] public bool ShowSearch { get; set; }
             [Column] public bool ShowFilters { get; set; }
             [Column] public bool ShowListing { get; set; }
+            [Column] public bool IsSelectable { get; set; }
             [Column] public string ListingPartialView { get; set; }
             [Column] public string ListingTitle { get; set; }
             [Column] public string OrderBy { get; set; }
