@@ -559,6 +559,7 @@ namespace Jittor.App.Services
                     PageNumber = request.PageNumber ?? 0,
                     PageSize = request.PageSize ?? 0,
                     TotalItemCount = count,
+                    IsSelectable = table.IsSelectable,
                     Columns = listerQuery.SelectColumnList.Select(x =>
                     {
                         var splittedKey = x.Split(".");

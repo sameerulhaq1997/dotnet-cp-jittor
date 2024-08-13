@@ -279,6 +279,7 @@ namespace Jittor.App.DataServices
             [Column] public int PageID { get; set; }
             [Column] public bool ForView { get; set; }
             [Column] public bool ForOperation { get; set; }
+            [Column] public bool IsSelectable { get; set; }
             [Column] public string SelectColumns { get; set; }
             [Column] public string Filters { get;  set; }
             [Column] public string Orders { get;  set; }
