@@ -352,6 +352,7 @@ namespace Jittor.App.Models
         public int PageSize { get; set; }
         public dynamic Columns { get; set; }
         public bool? IsSelectable { get; set; }
+        public bool? HideAddUpdate { get; set; }
         public int TotalPages => (int)Math.Ceiling((double)TotalItemCount / PageSize);
 
     }

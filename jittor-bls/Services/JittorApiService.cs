@@ -222,7 +222,7 @@ namespace Jittor.App.Services
             var res = await _jittorDataServices.DeleteForm(pageID);
             return res;
         }
-        public async Task<ResponseModel> pageId(jitterDeleteModel ID, int PageID)
+        public async Task<ResponseModel> pageId(jitterDeleteModel ID, int PageID, bool loadData = true)
         {
             var results = new List<List<dynamic>>();
 
@@ -232,7 +232,7 @@ namespace Jittor.App.Services
             List<object> idValues = ID.IdValues;
             JittorPageModel? jitorPageModel = new JittorPageModel();
             jitorPageModel = _jittorDataServices.GetPageId(PageID);
-            jitorPageModel = await _jittorDataServices.GetPageModel(jitorPageModel.UrlFriendlyName, true);
+            jitorPageModel = await _jittorDataServices.GetPageModel(jitorPageModel.UrlFriendlyName, loadData);
 
             try
             {
@@ -246,7 +246,12 @@ namespace Jittor.App.Services
                     {
                         chartbysectionid = _jittorDataServices.getRecordsFromChartbySectionId(firstColumnName, ID.IdValues.FirstOrDefault());
                     }
-                    if (!chartbysectionid)
+                    if (firstColumnName == "ArticleID")
+                    {
+                        bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(0, jitorPageModel.PageTables.FirstOrDefault().TableName, columnNames.FirstOrDefault(), idValues.FirstOrDefault(), true);
+
+                    }
+                    else if (!chartbysectionid)
                     {
                         var userID = 0;
                         bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.UrlFriendlyName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());

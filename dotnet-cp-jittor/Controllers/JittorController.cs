@@ -50,7 +50,7 @@ namespace Jittor.Api.Controllers
         [HttpPost("page/deleteRecord/{PageID}")]
         public async Task<IActionResult> pageId([FromBody] jitterDeleteModel ID, int PageID)
         {
-            var res = await _jittorService.pageId(ID, PageID);
+            var res = await _jittorService.pageId(ID, PageID, false);
             return Ok(res);
         }
         [HttpPost("page/SortedData")]

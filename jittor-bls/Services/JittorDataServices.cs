@@ -368,7 +368,7 @@ namespace Jittor.App.Services
                 return context.Fetch<dynamic>(sql).ToList();
             }, 5);
         }
-        public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname, object ChartId)
+        public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname, object ChartId, bool? isArticleRelated = false)
         {
             using (var context = _tableContext)
             {
@@ -379,8 +379,16 @@ namespace Jittor.App.Services
                 try
                 {
                     // Perform the deletion
-                    context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.Format("Delete From {0} Where {1} = {2}", pagename, columnname, chartidint));
-                    return true;
+                    if (isArticleRelated == true)// Update IsDeleted = true and ArticleStatusID = 7
+                    {
+                        context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.Format("Update {0} Set IsDeleted = 1,ArticleStatusID = 7 Where {1} = {2}", pagename, columnname, chartidint));
+                        return true;
+                    }
+                    else
+                    {
+                        context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.Format("Delete From {0} Where {1} = {2}", pagename, columnname, chartidint));
+                        return true;
+                    }
                 }
                 catch (SqlException ex)
                 {
@@ -514,7 +522,7 @@ namespace Jittor.App.Services
         {
             try
             {
-                //List<string> hideAddUpdateForPages = new List<string>() { "Delete Articles"};
+                List<int> hideAddUpdateForPages = new List<int>() { 186};
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
@@ -561,6 +569,7 @@ namespace Jittor.App.Services
                     PageSize = request.PageSize ?? 0,
                     TotalItemCount = count,
                     IsSelectable = table.IsSelectable,
+                    HideAddUpdate = hideAddUpdateForPages.Contains(request.PageId ?? 0),
                     Columns = listerQuery.SelectColumnList.Select(x =>
                     {
                         var splittedKey = x.Split(".");
