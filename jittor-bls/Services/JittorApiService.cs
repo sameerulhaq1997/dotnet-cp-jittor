@@ -254,7 +254,8 @@ namespace Jittor.App.Services
                     else if (!chartbysectionid)
                     {
                         var userID = 0;
-                        bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.UrlFriendlyName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());
+                        //bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.UrlFriendlyName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());
+                        bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.PageTables.FirstOrDefault().TableName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());
                         if (isDeleted)
                         {
                             deleted++;

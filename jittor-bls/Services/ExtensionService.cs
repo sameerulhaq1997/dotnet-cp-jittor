@@ -189,6 +189,7 @@ namespace Jittor.App.Services
                 var values = filter.Value!.Split(',').Select((x, index) => x);
                 return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} ( @0 )) ", values);
             }
+            Uri.UnescapeDataString(filter.Value ?? "");
             return sql.Append($" {(index == 0 ? "" : string.IsNullOrEmpty(filter.Operation) ? "AND" : filter.Operation)} ({filter.Field} {filter.Operator} {(string.IsNullOrEmpty(filter.TryConvertType) ? "@0" : $"TRY_CONVERT({filter.TryConvertType}, @0)")} ) ", filter.Value ?? "");
         }
 
