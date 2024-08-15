@@ -234,7 +234,7 @@ namespace Jittor.App.Services
 
         public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
-            var tablesToGet = context == null ? GetAllRelatedTables(tableName) : tableName.ToLower().Split(",").ToList();
+            var tablesToGet = context == null || tableName.Contains(",") ? tableName.ToLower().Split(",").ToList() : GetAllRelatedTables(tableName);
             var parentData = GetTableSchema(tablesToGet, schemaName, context);
             return parentData;
 
@@ -514,6 +514,7 @@ namespace Jittor.App.Services
         {
             try
             {
+                //List<string> hideAddUpdateForPages = new List<string>() { "Delete Articles"};
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
@@ -720,10 +721,11 @@ namespace Jittor.App.Services
             var selectColumnList = selectClause.Split(',').Select(x => x.Split("AS")[0].Trim()).ToList();
             var asColumnDictionary = selectClause.Split(',').Select(column => column.Split(" AS ")).Where(parts => parts.Length == 2).ToDictionary(parts => parts[0], parts => ValidAlias(parts[1])) ?? new Dictionary<string, string?>();
 
-            var tableName = request.TableName;
+            var tableName = (request.TableName ?? "").Split(",")[0];
             request.TableName = (request.TableName ?? "").Split(".").Length == 2 ? (request.TableName ?? "").Split(".")[1] : request.TableName;
 
-            var tables = request.IsArgaamContext == true ? request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "") : request.TableName;
+            var tables = request.IsArgaamContext == true || (request.TableName?? "").Contains("") ? request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "") : request.TableName;
+            request.TableName = (request.TableName ?? "").Split(",")[0];
             var tableColumns = GetTableAndChildTableColumns(tables ?? "", "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
             selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
             request.Filters = request.Filters != null ? request.Filters.ValidateTableColumns(tableColumns) : new List<PageFilterModel>();
