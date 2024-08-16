@@ -50,7 +50,14 @@ namespace Jittor.Api.Controllers
         [HttpPost("page/deleteRecord/{PageID}")]
         public async Task<IActionResult> pageId([FromBody] jitterDeleteModel ID, int PageID)
         {
-            var res = await _jittorService.pageId(ID, PageID, false);
+            string deleteQuery = "";
+            DynamicExtender? extender = this.GetExtandered(string.Join("_", ID.ColumnNames) + "_Delete");
+            if(extender != null)
+            {
+                deleteQuery = extender.ExecuteDeleteScripts(ID.IdValues.FirstOrDefault()?.ToString() ?? "");
+            }
+
+            var res = await _jittorService.pageId(ID, PageID, false, deleteQuery);
             return Ok(res);
         }
         [HttpPost("page/SortedData")]
@@ -79,6 +86,30 @@ namespace Jittor.Api.Controllers
                 return Ok(res);
             }
             catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("page/record/{pageId}")]
+        public IActionResult GetPageRecord(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
+        {
+            try
+            {
+                Request.Headers.TryGetValue("filters", out StringValues filtersString);
+                var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
+
+                var request = new DataListerRequest()
+                {
+                    PageId = pageId,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    Sort = sort,
+                    Filters = filters
+                };
+                var res = _jittorService.GetPageRecord(request);
+                return Ok(res);
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -161,7 +192,7 @@ namespace Jittor.Api.Controllers
                 if (filters != null && filters.Any(x => x.ExternalSearch == true))
                     extender = this.GetExtandered("ArticleListerExtender");
 
-                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender == null ? null : extender.ExecuteExternalScripts(filters));
+                var res = _jittorService.GetPageLister(request, "articles", $"Articles.ArticleID,Articles.Title,Articles.Author,ArticleTypes.Name{(lang == "1" ? "Ar" : "En")} AS Type,ArticleStatuses.Name{(lang == "1" ? "Ar" : "En")} AS Status,ArticleViews.ViewCount", joins, extender == null ? null : extender.ExecuteFilterScripts(filters));
                 return Ok(res);
             }
             catch (Exception ex)

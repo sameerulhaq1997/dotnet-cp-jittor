@@ -1,4 +1,5 @@
 ﻿using Jittor.App.Models;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace dotnet_cp_jitter.Extender
 {
@@ -6,12 +7,13 @@ namespace dotnet_cp_jitter.Extender
 
     public abstract  class DynamicExtender
     {
-        public virtual string ExecuteExternalScripts(List<PageFilterModel>? filters) { return string.Empty; }
+        public virtual string ExecuteFilterScripts(List<PageFilterModel>? filters) { return string.Empty; }
+        public virtual string ExecuteDeleteScripts(string value) { return string.Empty; }
     }
 
     public  class ArticleListerExtender : DynamicExtender
     {
-        public override string ExecuteExternalScripts(List<PageFilterModel>? filters)
+        public override string ExecuteFilterScripts(List<PageFilterModel>? filters)
         {
             var query = "";
             if(filters == null)
@@ -42,6 +44,14 @@ namespace dotnet_cp_jitter.Extender
             }
 
             return query;
+        }
+    }
+
+    public class ArticleId_Delete : DynamicExtender
+    {
+        public override string ExecuteDeleteScripts(string value)
+        {
+            return $"Update Articles Set IsDeleted = 1,ArticleStatusID = 7 Where ArticleID = {value}";
         }
     }
 }

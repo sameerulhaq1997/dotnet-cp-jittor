@@ -368,7 +368,7 @@ namespace Jittor.App.Services
                 return context.Fetch<dynamic>(sql).ToList();
             }, 5);
         }
-        public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname, object ChartId, bool? isArticleRelated = false)
+        public bool DeleteRecordByIdandPageName(int userId, string pagename, string columnname, object ChartId, string? deleteQuery = null)
         {
             using (var context = _tableContext)
             {
@@ -379,16 +379,16 @@ namespace Jittor.App.Services
                 try
                 {
                     // Perform the deletion
-                    if (isArticleRelated == true)// Update IsDeleted = true and ArticleStatusID = 7
-                    {
-                        context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.Format("Update {0} Set IsDeleted = 1,ArticleStatusID = 7 Where {1} = {2}", pagename, columnname, chartidint));
+                    //if (isArticleRelated == true)// Update IsDeleted = true and ArticleStatusID = 7
+                    //{
+                    //    context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.Format("Update {0} Set IsDeleted = 1,ArticleStatusID = 7 Where {1} = {2}", pagename, columnname, chartidint));
+                    //    return true;
+                    //}
+                    //else
+                    //{
+                        context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.IsNullOrEmpty(deleteQuery) ? string.Format("Delete From {0} Where {1} = {2}", pagename, columnname, chartidint) : deleteQuery);
                         return true;
-                    }
-                    else
-                    {
-                        context.Execute(userId, pagename, ActionTypeEnum.Delete.ToString(), string.Format("Select * From {0} Where {1} = {2}", pagename, columnname, chartidint), string.Format("Delete From {0} Where {1} = {2}", pagename, columnname, chartidint));
-                        return true;
-                    }
+                    //}
                 }
                 catch (SqlException ex)
                 {
@@ -559,6 +559,79 @@ namespace Jittor.App.Services
                     PageId = request.PageId,
                 };
                 var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
+                var list = tableContext.Fetch<dynamic>(listerQuery.Sql).ToList();
+
+                listerQuery.SelectColumnList.Add(table.TableName + ".id");
+                return new DataListerResponse<dynamic>()
+                {
+                    Items = list,
+                    PageNumber = request.PageNumber ?? 0,
+                    PageSize = request.PageSize ?? 0,
+                    TotalItemCount = count,
+                    IsSelectable = table.IsSelectable,
+                    HideAddUpdate = hideAddUpdateForPages.Contains(request.PageId ?? 0),
+                    Columns = listerQuery.SelectColumnList.Select(x =>
+                    {
+                        var splittedKey = x.Split(".");
+                        return new
+                        {
+                            Field = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
+                            HeaderName = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
+                            TableName = splittedKey[0],
+                            Hideable = splittedKey[1] == "id" ? false : true,
+                        };
+                    }).ToList(),
+                    //PageName = table.UrlFriendlyName
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+        public DataListerResponse<dynamic>? GetPageRecord(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null, string? externalScripts = null)
+        {
+            try
+            {
+                List<int> hideAddUpdateForPages = new List<int>() { 186 };
+                using var tableContext = _tableContext;
+                using var context = DataContexts.GetJittorDataContext();
+
+                var table = new JITPageTable();
+                if (externalTable != null)
+                    table.TableName = externalTable;
+                else
+                    table = context.Fetch<JITPageTable>($"SELECT * FROM JITPageTables WHERE PageID = @0 AND ForView = 1 AND ProjectId = '{_projectId}'", request.PageId ?? 0).FirstOrDefault();
+                if (table == null)
+                {
+                    return new DataListerResponse<dynamic>();
+                }
+
+                var tableColumns = context.Fetch<string>($"SELECT STRING_AGG(CONCAT('{table.TableName}.', AttributeName), ', ') FROM JITPageAttributes WHERE PageID = @0 AND TableID = {table.TableID} AND ProjectId = '{_projectId}'", request.PageId ?? 0).FirstOrDefault();
+                var selectClause = string.IsNullOrEmpty(tableColumns) ? (string.IsNullOrEmpty(externalSelectedColumns) ? (table.TableName + ".*") : externalSelectedColumns) : tableColumns;
+                var joins = externalJoins != null ? externalJoins : JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
+                request.Filters = request.Filters ?? new List<PageFilterModel>();
+                if (!string.IsNullOrEmpty(table.Filters))
+                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters ?? "[]") ?? new List<PageFilterModel>()).ToList();
+                if (table.Orders != null || request.Sort != null)
+                    request.Sort = request.Sort ?? (table.Orders ?? "");
+                request.PageSize = (table.Page > 0 ? table.Page.Value : request.PageSize ?? 0);
+
+                var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
+
+
+                var newRequest = new DropdownListerRequest()
+                {
+                    TableName = table.TableName,
+                    Joins = joins,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize,
+                    Sort = request.Sort,
+                    Filters = request.Filters,
+                    PageId = request.PageId,
+                };
+                var listerQuery = BuildListerQuery(newRequest, selectClause, joins, externalScripts);
                 var list = tableContext.Fetch<dynamic>(listerQuery.Sql).ToList();
 
                 listerQuery.SelectColumnList.Add(table.TableName + ".id");

@@ -222,7 +222,7 @@ namespace Jittor.App.Services
             var res = await _jittorDataServices.DeleteForm(pageID);
             return res;
         }
-        public async Task<ResponseModel> pageId(jitterDeleteModel ID, int PageID, bool loadData = true)
+        public async Task<ResponseModel> pageId(jitterDeleteModel ID, int PageID, bool loadData = true, string? deleteQuery = null)
         {
             var results = new List<List<dynamic>>();
 
@@ -246,16 +246,11 @@ namespace Jittor.App.Services
                     {
                         chartbysectionid = _jittorDataServices.getRecordsFromChartbySectionId(firstColumnName, ID.IdValues.FirstOrDefault());
                     }
-                    if (firstColumnName == "ArticleID")
-                    {
-                        bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(0, jitorPageModel.PageTables.FirstOrDefault().TableName, columnNames.FirstOrDefault(), idValues.FirstOrDefault(), true);
-
-                    }
-                    else if (!chartbysectionid)
+                    if (!chartbysectionid)
                     {
                         var userID = 0;
                         //bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.UrlFriendlyName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());
-                        bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.PageTables.FirstOrDefault().TableName, columnNames.FirstOrDefault(), idValues.FirstOrDefault());
+                        bool isDeleted = _jittorDataServices.DeleteRecordByIdandPageName(userID, jitorPageModel.PageTables.FirstOrDefault().TableName, columnNames.FirstOrDefault(), idValues.FirstOrDefault(), deleteQuery);
                         if (isDeleted)
                         {
                             deleted++;
@@ -311,6 +306,11 @@ namespace Jittor.App.Services
         public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null, string? executeExternalScripts = null)
         {
             var res = _jittorDataServices.GetPageLister(request, externalTable, externalSelectedColumns, externalJoins,executeExternalScripts);
+            return res;
+        }
+        public DataListerResponse<dynamic>? GetPageRecord(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null, string? executeExternalScripts = null)
+        {
+            var res = _jittorDataServices.GetPageRecord(request, externalTable, externalSelectedColumns, externalJoins, executeExternalScripts);
             return res;
         }
         public DropdownListerResponse PoplulateDropDowns(DropdownListerRequest request)
