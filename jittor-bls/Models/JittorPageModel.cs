@@ -236,7 +236,7 @@ namespace Jittor.App.Models
                         {
                             if (keyValuePairs[att.AttributeName] != null && keyValuePairs.TryGetValue(att.AttributeName, out var value))
                             {
-                                if (value is int intValue && intValue != 0)
+                                if (int.TryParse(value?.ToString() ?? "0", out int intValue) && intValue != 0)
                                 {
                                     entity.PrimaryValues = entity.PrimaryValues ?? new Dictionary<string, object>();
                                     entity.PrimaryValues.Add(att.AttributeName, keyValuePairs[att.AttributeName]);
