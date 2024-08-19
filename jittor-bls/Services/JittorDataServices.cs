@@ -682,6 +682,10 @@ namespace Jittor.App.Services
                 var listerQuery = BuildListerQuery(request, (request.ColumnName ?? ""), joins,null, true);
                 var list = tableContext.Fetch<FieldOption>(listerQuery.Sql).ToList();
 
+                var defaultValues = (request.Values ?? "").Split(",").ToList();
+                if(defaultValues.Any())
+                    list.Where(x => defaultValues.Contains(x.Value.ToString())).ToList().ForEach(x => x.IsSelected = true);
+
                 return new DropdownListerResponse()
                 {
                     Items = list

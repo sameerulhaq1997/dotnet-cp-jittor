@@ -89,6 +89,7 @@ namespace Jittor.App.Models
         public int Value { get; set; }
         public string Label { get; set; }
         public bool Disabled { get; set; }
+        public bool IsSelected { get; set; }
     }
     public class FieldValue
     {

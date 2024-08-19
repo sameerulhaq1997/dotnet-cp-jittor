@@ -203,7 +203,7 @@ namespace Jittor.Api.Controllers
 
 
         [HttpGet("table/dropdown/{tableName}/{columnName}")]
-        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false, bool? isDistinct = false)
+        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false, bool? isDistinct = false, string? extender = null)
         {
             try
             {
@@ -221,7 +221,8 @@ namespace Jittor.Api.Controllers
                     Filters = filters,
                     Joins = joins,
                     IsArgaamContext = isArgaamContext,
-                    IsDistinct = isDistinct
+                    IsDistinct = isDistinct,
+                    //Values = "2373"
                 };
                 var res = _jittorService.PoplulateDropDowns(request);
                 return Ok(res);
