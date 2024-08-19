@@ -537,16 +537,21 @@ namespace Jittor.App.Services
                 }
 
                 var selectClause = string.IsNullOrEmpty(table.SelectColumns) ? (string.IsNullOrEmpty(externalSelectedColumns) ? (table.TableName + ".*") : externalSelectedColumns) : table.SelectColumns;
-                var joins = externalJoins != null ? externalJoins : JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]");
+                var joins = externalJoins != null ? externalJoins : (JsonConvert.DeserializeObject<List<PageJoinModel>>(table.Joins ?? "[]")?.Select(x =>
+                {
+                    x.FixedJoin = true;
+                    return x;
+                }).ToList() ?? new List<PageJoinModel>());
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
                 if (!string.IsNullOrEmpty(table.Filters))
-                    request.Filters = request.Filters.Concat(JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters ?? "[]") ?? new List<PageFilterModel>()).ToList();
+                    request.Filters = request.Filters.Concat((JsonConvert.DeserializeObject<List<PageFilterModel>>(table.Filters ?? "[]"))?.Select(x =>
+                    {
+                        x.FixedFilter = true;
+                        return x;
+                    }) ?? new List<PageFilterModel>()).ToList();
                 if (table.Orders != null || request.Sort != null)
                     request.Sort = request.Sort ?? (table.Orders ?? "");
                 request.PageSize = (table.Page > 0 ? table.Page.Value : request.PageSize ?? 0);
-
-                var count = tableContext.ExecuteScalar<long>($"SELECT COUNT(*) FROM {table.TableName}");
-
 
                 var newRequest = new DropdownListerRequest()
                 {
@@ -559,6 +564,7 @@ namespace Jittor.App.Services
                     PageId = request.PageId,
                 };
                 var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
+                var count = tableContext.ExecuteScalar<int>(listerQuery.CountSql);
                 var list = tableContext.Fetch<dynamic>(listerQuery.Sql).ToList();
 
                 listerQuery.SelectColumnList.Add(table.TableName + ".id");
@@ -836,6 +842,8 @@ namespace Jittor.App.Services
             var primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " AS Value, " : " AS id, ");
             var sql = Sql.Builder.Append($"SELECT {primaryKey} {selectColumnsString} FROM {tableName} ");
 
+            var countSql = Sql.Builder.Append($"SELECT COUNT(1) FROM {tableName}");
+
             if (joins != null)
             {
                 foreach (var join in joins.ValidateTableColumns(tableColumns))
@@ -845,6 +853,8 @@ namespace Jittor.App.Services
                     if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
                     {
                         sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
+                        if(join.FixedJoin == true)
+                            countSql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
                     }
                 }
             }
@@ -853,7 +863,10 @@ namespace Jittor.App.Services
             {
                 sql.Append(" WHERE ");
                 if((request.Filters != null && request.Filters.Count > 0))
-                    request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)));
+                    request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => {
+                        sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter));
+                        sql = filter.FixedFilter == true ? sql.BuildWhereClause(filter, request.Filters.IndexOf(filter)) : sql;
+                    });
                 if(!string.IsNullOrEmpty(externalScripts))
                     sql.Append(externalScripts);
             }
@@ -873,6 +886,7 @@ namespace Jittor.App.Services
             return new BuildListerQueryResponse()
             {
                 Sql = sql,
+                CountSql = countSql,
                 SelectColumnList = selectColumnList,
                 ColumnDictionary = asColumnDictionary
             };

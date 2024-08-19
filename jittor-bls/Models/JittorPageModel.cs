@@ -363,6 +363,7 @@ namespace Jittor.App.Models
     public class BuildListerQueryResponse
     {
         public Sql Sql { get; set; }
+        public Sql CountSql { get; set; }
         public List<string> SelectColumnList { get; set; }
         public Dictionary<string, string?> ColumnDictionary { get; set; }
     }

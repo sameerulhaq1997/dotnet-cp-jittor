@@ -192,6 +192,7 @@ namespace Jittor.App.Models
         public string Operation { get; set; }
         public bool? ExternalSearch { get; set; }
         public string? TryConvertType { get; set; }
+        public bool? FixedFilter { get; set; }
     }
     public class PageJoinModel
     {
@@ -199,6 +200,7 @@ namespace Jittor.App.Models
         public string JoinTable { get; set; }
         public string ParentTableColumn { get; set; }
         public string JoinTableColumn { get; set; }
+        public bool? FixedJoin { get; set; }
     }
     public class ValidationRule
     {
