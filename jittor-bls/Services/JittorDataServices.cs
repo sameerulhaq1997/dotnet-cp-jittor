@@ -823,7 +823,7 @@ namespace Jittor.App.Services
 
             string selectColumnsString = "";
             if (isDropDown)
-                selectColumnsString = (selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL(CAST({column} AS NVARCHAR), '')")) : (selectColumnList.FirstOrDefault() ?? "")) + " as Label";
+                selectColumnsString = (selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL(CAST({column} AS NVARCHAR(MAX)), '')")) : (selectColumnList.FirstOrDefault() ?? "")) + " as Label";
             else
             {
                 selectColumnsString = string.Join(',', selectColumnList.Select(column =>
