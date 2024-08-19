@@ -169,6 +169,16 @@ namespace Jittor.App.Services
                     filter.Value = "";
                     break;
 
+                case "isnullorempty":
+                    filter.Operator = $"IS NULL AND {filter.Field} <>";
+                    filter.Value = "";
+                    break;
+
+                case "isnull":
+                    filter.Operator = $"IS NULL";
+                    filter.Value = "";
+                    break;
+
                 case "isanyof":
                     filter.Operator = "IN";
                     filter.Value = filter.Value;
@@ -187,15 +197,15 @@ namespace Jittor.App.Services
                     break;
 
                 default:
-                    throw new ArgumentException("Invalid operator type");
+                    return sql;
             }
-            if(filter.Operator == "IN")
+            if(filter.Operator == "IN" || filter.Operator == "NOT IN")
             {
                 var param = filter.Value!.Split(',').Select((x, index) => "@" + index);
                 var values = filter.Value!.Split(',').Select((x, index) => x);
                 return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} ( @0 )) ", values);
             }
-            return sql.Append($" {(index == 0 ? "" : string.IsNullOrEmpty(filter.Operation) ? "AND" : filter.Operation)} ({filter.Field} {filter.Operator} {(string.IsNullOrEmpty(filter.TryConvertType) ? "@0" : $"TRY_CONVERT({filter.TryConvertType}, @0)")} ) ", Uri.UnescapeDataString(filter.Value ?? ""));
+            return sql.Append($" {(index == 0 ? "" : string.IsNullOrEmpty(filter.Operation) ? "AND" : filter.Operation)} ({filter.Field} {filter.Operator} {(filter.Operator == "IS NULL" ? "" : ((string.IsNullOrEmpty(filter.TryConvertType) ? "@0" : $"TRY_CONVERT({filter.TryConvertType}, @0)")))} ) ", Uri.UnescapeDataString(filter.Value ?? ""));
         }
 
         public static List<string> ValidateTableColumns(this List<string> value, List<JittorColumnInfo> columns, bool isOrderBy = false)

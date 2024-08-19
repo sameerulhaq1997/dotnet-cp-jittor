@@ -139,7 +139,7 @@ namespace Jittor.App.Services
         }
         public List<JittorColumnInfo> GetTableSchema(List<string> tables, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
-
+            tables = tables.Select(x => x.ToLower().Replace("pub.", "")).ToList();
             var tablesToGet = tables.Where(x => !tableColumns.Any(y => y.Key == x));
 
             List<JittorColumnInfo> tableColumnList = new List<JittorColumnInfo>();
@@ -806,7 +806,7 @@ namespace Jittor.App.Services
             var tableName = (request.TableName ?? "").Split(",")[0];
             request.TableName = (request.TableName ?? "").Split(".").Length == 2 ? (request.TableName ?? "").Split(".")[1] : request.TableName;
 
-            var tables = request.IsArgaamContext == true || (request.TableName?? "").Contains("") ? request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "") : request.TableName;
+            var tables = request.IsArgaamContext == true || (request.TableName?? "").Contains(",") ? request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "") : request.TableName;
             request.TableName = (request.TableName ?? "").Split(",")[0];
             var tableColumns = GetTableAndChildTableColumns(tables ?? "", "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
             selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
@@ -840,7 +840,7 @@ namespace Jittor.App.Services
             {
                 foreach (var join in joins.ValidateTableColumns(tableColumns))
                 {
-                    bool tableExists = tableColumns.Select(x => x.TableName).Contains(join.JoinTable);
+                    bool tableExists = tableColumns.Select(x => x.TableName).Contains(join.JoinTable.Replace("pub.", ""));
 
                     if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
                     {
