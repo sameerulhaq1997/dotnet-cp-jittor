@@ -173,6 +173,12 @@ namespace Jittor.App.Services
                     filter.Operator = "IN";
                     filter.Value = filter.Value;
                     break;
+
+                case "isnotanyof":
+                    filter.Operator = "NOT IN";
+                    filter.Value = filter.Value;
+                    break;
+
                 case "greaterorequal":
                     filter.Operator = ">=";
                     break;
