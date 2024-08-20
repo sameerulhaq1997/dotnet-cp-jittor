@@ -810,13 +810,14 @@ namespace Jittor.App.Services
         {
             List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
 
-            var selectColumnList = selectClause.Split(',').Select(x => x.Split("AS")[0].Trim()).ToList();
-            var asColumnDictionary = selectClause.Split(',').Select(column => column.Split(" AS ")).Where(parts => parts.Length == 2).ToDictionary(parts => parts[0], parts => ValidAlias(parts[1])) ?? new Dictionary<string, string?>();
+            selectClause = selectClause.ToLower();
+            var selectColumnList = selectClause.Split(',').Select(x => x.Split("as")[0].Trim()).ToList();
+            var asColumnDictionary = selectClause.Split(',').Select(column => column.Split(" as ")).Where(parts => parts.Length == 2).ToDictionary(parts => parts[0], parts => ValidAlias(parts[1])) ?? new Dictionary<string, string?>();
 
             var tableName = (request.TableName ?? "").Split(",")[0];
             request.TableName = (request.TableName ?? "").Split(".").Length == 2 ? (request.TableName ?? "").Split(".")[1] : request.TableName;
 
-            var tables = request.IsArgaamContext == true || (request.TableName?? "").Contains(",") ? request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "") : request.TableName;
+            var tables = request.TableName + (joins != null ? (joins.Count > 0 ? "," : "") + string.Join(",", joins.Select(x => x.JoinTable)) : "");
             request.TableName = (request.TableName ?? "").Split(",")[0];
             var tableColumns = GetTableAndChildTableColumns(tables ?? "", "dbo", request.IsArgaamContext == true ? _secondaryTableContext : null);
             selectColumnList = selectColumnList.ValidateTableColumns(tableColumns);
@@ -833,17 +834,17 @@ namespace Jittor.App.Services
 
             string selectColumnsString = "";
             if (isDropDown)
-                selectColumnsString = (selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL(CAST({column} AS NVARCHAR(MAX)), '')")) : (selectColumnList.FirstOrDefault() ?? "")) + " as Label";
+                selectColumnsString = (selectColumnList.Count > 1 ? string.Join(" + ' - ' + ", selectColumnList.Select(column => $"ISNULL(CAST({column} as NVARCHAR(MAX)), '')")) : (selectColumnList.FirstOrDefault() ?? "")) + " as Label";
             else
             {
                 selectColumnsString = string.Join(',', selectColumnList.Select(column =>
                 {
                     var alias = asColumnDictionary.GetValueOrDefault<string, string?>(column);
-                    return column + (alias == null ? "" : " AS " + alias);
+                    return column + (alias == null ? "" : " as " + alias);
                 }));
             }
 
-            var primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " AS Value, " : " AS id, ");
+            var primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " as Value, " : " as id, ");
             var sql = Sql.Builder.Append($"SELECT {primaryKey} {selectColumnsString} FROM {tableName} ");
 
             var countSql = Sql.Builder.Append($"SELECT COUNT(1) FROM {tableName}");
