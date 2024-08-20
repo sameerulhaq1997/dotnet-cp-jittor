@@ -228,7 +228,7 @@ namespace Jittor.App.Services
 
             int deleted = 0;
             string message = "";
-            List<string> columnNames = ID.ColumnNames;
+            List<string> columnNames = ID.ColumnNames.Select(x => x.ToLower()).ToList();
             List<object> idValues = ID.IdValues;
             JittorPageModel? jitorPageModel = new JittorPageModel();
             jitorPageModel = _jittorDataServices.GetPageId(PageID);
@@ -238,7 +238,7 @@ namespace Jittor.App.Services
             {
                 var firstColumnName = jitorPageModel.PageAttributes.Where(a => a.IsPrimaryKey).Select(a => a.AttributeName).FirstOrDefault();
 
-                if (columnNames != null && idValues != null && columnNames.Count == idValues.Count && columnNames.Contains(firstColumnName))
+                if (columnNames != null && idValues != null && columnNames.Count == idValues.Count && columnNames.Contains((firstColumnName ?? "").ToLower()))
                 {
                     bool chartbysectionid = false;
 
