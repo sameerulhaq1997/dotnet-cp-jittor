@@ -234,8 +234,8 @@ namespace Jittor.App.Services
 
         public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
-            var tablesToGet = context == null || tableName.Contains(",") ? tableName.ToLower().Split(",").ToList() : GetAllRelatedTables(tableName);
-            var parentData = GetTableSchema(tablesToGet, schemaName, context);
+            var tablesToGet = tableName.Contains(",") ? tableName.ToLower().Split(",").ToList() : GetAllRelatedTables(tableName);
+            var parentData = GetTableSchema(tablesToGet, schemaName, _secondaryTableContext);
             return parentData;
 
         }
