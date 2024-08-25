@@ -214,7 +214,12 @@ namespace Jittor.App.Services
             }
             catch (Exception e)
             {
-                return new ResponseModel() { Result = "Failed", Message = e.Message, Page = pageName, Data = results, Created = 0, Updared = 0 };
+                string errorMessage = e.Message;
+                if(e.Message.Contains("Int16"))
+                {
+                    errorMessage = e.Message.Replace("Int16", "Number");
+                }
+                return new ResponseModel() { Result = "Failed", Message = errorMessage, Page = pageName, Data = results, Created = 0, Updared = 0 };
             }
         }
         public async Task<bool> DeleteForm(int pageID)
