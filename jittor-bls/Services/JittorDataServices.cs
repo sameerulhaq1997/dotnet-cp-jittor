@@ -867,11 +867,17 @@ namespace Jittor.App.Services
             if ((request.Filters != null && request.Filters.Count > 0) || !string.IsNullOrEmpty(externalScripts))
             {
                 sql.Append(" WHERE ");
-                if((request.Filters != null && request.Filters.Count > 0))
-                    request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter => {
+                if ((request.Filters != null && request.Filters.Count > 0))
+                {
+                    countSql.Append(request.Filters.Where(x => x.FixedFilter == true).Any() ? " WHERE " : "");
+                    request.Filters.Where(x => !(x.ExternalSearch == true)).ToList().ForEach(filter =>
+                    {
+                        var newFilter = JsonConvert.DeserializeObject<PageFilterModel>(JsonConvert.SerializeObject(filter));
                         sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter));
-                        countSql = filter.FixedFilter == true ? countSql.BuildWhereClause(filter, request.Filters.IndexOf(filter)) : countSql;
+                        if (filter.FixedFilter == true)
+                            countSql = countSql.BuildWhereClause(newFilter ?? new PageFilterModel(), request.Filters.IndexOf(filter));
                     });
+                }
                 if(!string.IsNullOrEmpty(externalScripts))
                     sql.Append(externalScripts);
             }
