@@ -875,7 +875,7 @@ namespace Jittor.App.Services
                         var newFilter = JsonConvert.DeserializeObject<PageFilterModel>(JsonConvert.SerializeObject(filter));
                         sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter));
                         if (filter.FixedFilter == true)
-                            countSql = countSql.BuildWhereClause(newFilter ?? new PageFilterModel(), request.Filters.IndexOf(filter));
+                            countSql = countSql.BuildWhereClause(newFilter ?? new PageFilterModel(), request.Filters.Where(x => x.FixedFilter == true).ToList().IndexOf(filter));
                     });
                 }
                 if(!string.IsNullOrEmpty(externalScripts))
