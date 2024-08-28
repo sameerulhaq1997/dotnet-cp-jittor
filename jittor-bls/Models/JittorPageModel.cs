@@ -343,6 +343,7 @@ namespace Jittor.App.Models
         public bool? IsDistinct { get; set; }
         public bool? TryConvert { get; set; }
         public string? Values { get; set; }
+        public string? CustomOrdering { get; set; }
     }
 
     public class DataListerResponse<T>
