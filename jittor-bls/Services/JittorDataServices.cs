@@ -896,8 +896,9 @@ namespace Jittor.App.Services
                 customOrderingCases.ForEach(x => customOrderingSQL.Append($" WHEN {primaryKeyColumn} = {x.id} THEN {x.position} "));
                 customOrderingSQL.Append($" ELSE {(int.Parse(customOrderingCases.OrderByDescending(x => x.position).Select(x => x.position)?.FirstOrDefault() ?? "0") + 1)} ");
                 customOrderingSQL.Append(" END ");
+                customOrderingSQL.Append($" ,{primaryKeyColumn} ");
             }
-            sql.OrderBy(orderString);
+            sql.OrderBy((customOrderingCases != null && customOrderingCases.Count > 0) ? customOrderingSQL : orderString);
 
             if (!isDropDown)
             {
