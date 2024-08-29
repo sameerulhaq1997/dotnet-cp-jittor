@@ -883,7 +883,7 @@ namespace Jittor.App.Services
             }
 
             var customOrderingCases = request.CustomOrdering?.Split(",").Select(x => new { id = (x.Split(":")[0]), position = x.Split(":")[1] }).ToList() ?? null;
-            var primaryKeyColumn = (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "");
+            var primaryKeyColumn = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "");
             var orderString = orders.Count() > 0 ? string.Join(',', orders) : (primaryKeyColumn) + " DESC ";
             if (request.IsDistinct == true)
             {
@@ -896,7 +896,7 @@ namespace Jittor.App.Services
                 customOrderingCases.ForEach(x => customOrderingSQL.Append($" WHEN {primaryKeyColumn} = {x.id} THEN {x.position} "));
                 customOrderingSQL.Append($" ELSE {(int.Parse(customOrderingCases.OrderByDescending(x => x.position).Select(x => x.position)?.FirstOrDefault() ?? "0") + 1)} ");
                 customOrderingSQL.Append(" END ");
-                customOrderingSQL.Append($" ,{primaryKeyColumn} ");
+                customOrderingSQL.Append($" ,{(string.IsNullOrEmpty(orderString?.Split(" ")[0] ?? null) ? primaryKeyColumn:orderString?.Split(" ")[0])} ");
             }
             sql.OrderBy((customOrderingCases != null && customOrderingCases.Count > 0) ? customOrderingSQL : orderString);
 
