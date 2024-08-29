@@ -156,7 +156,7 @@ namespace Jittor.Api.Controllers
                         JoinTableColumn = "ArticleViews.ArticleID"
                     }
                 };
-
+                
                 if(filters != null && filters.Any(x => x.Field == "ArticleFeatures.IsModerate"))
                 {
                     joins.Add(new PageJoinModel()
@@ -203,7 +203,7 @@ namespace Jittor.Api.Controllers
 
 
         [HttpGet("table/dropdown/{tableName}/{columnName}")]
-        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false, bool? isDistinct = false, string? extender = null)
+        public IActionResult PoplulateDropDowns(string tableName, string columnName, string? sort = null, bool? isArgaamContext = false, bool? isDistinct = false, string? extender = null, string? customOrdering = null)
         {
             try
             {
@@ -222,6 +222,7 @@ namespace Jittor.Api.Controllers
                     Joins = joins,
                     IsArgaamContext = isArgaamContext,
                     IsDistinct = isDistinct,
+                    CustomOrdering = customOrdering
                     //Values = "2373"
                 };
                 var res = _jittorService.PoplulateDropDowns(request);
