@@ -858,8 +858,8 @@ namespace Jittor.App.Services
                     if (JoinTypes.Contains(join.JoinType.ToLower()) && tableExists)
                     {
                         sql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
-                        if(join.FixedJoin == true)
-                            countSql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
+                        //if(join.FixedJoin == true)
+                        countSql.Append($" {join.JoinType} {join.JoinTable} on {join.ParentTableColumn} = {join.JoinTableColumn} ");
                     }
                 }
             }
@@ -874,12 +874,15 @@ namespace Jittor.App.Services
                     {
                         var newFilter = JsonConvert.DeserializeObject<PageFilterModel>(JsonConvert.SerializeObject(filter));
                         sql = sql.BuildWhereClause(filter, request.Filters.IndexOf(filter));
-                        if (filter.FixedFilter == true)
-                            countSql = countSql.BuildWhereClause(newFilter ?? new PageFilterModel(), request.Filters.Where(x => x.FixedFilter == true).ToList().IndexOf(filter));
+                        //if (filter.FixedFilter == true)
+                        countSql = countSql.BuildWhereClause(newFilter ?? new PageFilterModel(), request.Filters.IndexOf(filter));
                     });
                 }
                 if(!string.IsNullOrEmpty(externalScripts))
+                {
                     sql.Append(externalScripts);
+                    countSql.Append(externalScripts);
+                }
             }
 
             var customOrderingCases = request.CustomOrdering?.Split(",").Select(x => new { id = (x.Split(":")[0]), position = x.Split(":")[1] }).ToList() ?? null;
