@@ -137,21 +137,22 @@ namespace Jittor.App.Services
             {
                 case "contains":
                     filter.Operator = "LIKE";
-                    filter.Value = "%" + filter.Value + "%";
+                    filter.Value = "%" + Uri.UnescapeDataString(filter.Value ?? "") + "%";
                     break;
 
                 case "equals":
                     filter.Operator = "=";
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
                     break;
 
                 case "startswith":
                     filter.Operator = "LIKE";
-                    filter.Value = filter.Value + "%";
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "") + "%";
                     break;
 
                 case "endswith":
                     filter.Operator = "LIKE";
-                    filter.Value = "%" + filter.Value;
+                    filter.Value = "%" + Uri.UnescapeDataString(filter.Value ?? "");
                     break;
 
                 case "isempty":
@@ -181,19 +182,30 @@ namespace Jittor.App.Services
 
                 case "isanyof":
                     filter.Operator = "IN";
-                    filter.Value = filter.Value;
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
                     break;
 
                 case "isnotanyof":
                     filter.Operator = "NOT IN";
-                    filter.Value = filter.Value;
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
                     break;
 
                 case "greaterorequal":
                     filter.Operator = ">=";
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
                     break;
                 case "lessorequal":
                     filter.Operator = "<=";
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
+                    break;
+
+                case "greater":
+                    filter.Operator = ">";
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
+                    break;
+                case "less":
+                    filter.Operator = "<";
+                    filter.Value = Uri.UnescapeDataString(filter.Value ?? "");
                     break;
 
                 default:
@@ -205,7 +217,7 @@ namespace Jittor.App.Services
                 var values = filter.Value!.Split(',').Select((x, index) => x);
                 return sql.Append($" {(index == 0 ? "" : filter.Operation)} ({filter.Field} {filter.Operator} ( @0 )) ", values);
             }
-            return sql.Append($" {(index == 0 ? "" : string.IsNullOrEmpty(filter.Operation) ? "AND" : filter.Operation)} ({filter.Field} {filter.Operator} {(filter.Operator == "IS NULL" ? "" : ((string.IsNullOrEmpty(filter.TryConvertType) ? "@0" : $"TRY_CONVERT({filter.TryConvertType}, @0)")))} ) ", Uri.UnescapeDataString(filter.Value ?? ""));
+            return sql.Append($" {(index == 0 ? "" : string.IsNullOrEmpty(filter.Operation) ? "AND" : filter.Operation)} ({filter.Field} {filter.Operator} {(filter.Operator == "IS NULL" ? "" : ((string.IsNullOrEmpty(filter.TryConvertType) ? "@0" : $"TRY_CONVERT({filter.TryConvertType}, @0)")))} ) ", filter.Value ?? "");
         }
 
         public static List<string> ValidateTableColumns(this List<string> value, List<JittorColumnInfo> columns, bool isOrderBy = false)
