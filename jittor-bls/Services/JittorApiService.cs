@@ -346,7 +346,7 @@ namespace Jittor.App.Services
                 Columns = columns.Select(x =>
                 {
                     
-                    return new
+                    return new TableColumns()
                     {
                         Field = x,
                         HeaderName = x,

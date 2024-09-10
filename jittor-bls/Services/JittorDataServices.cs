@@ -566,7 +566,18 @@ namespace Jittor.App.Services
                 var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
                 var count = tableContext.ExecuteScalar<int>(listerQuery.CountSql);
                 var list = tableContext.Fetch<dynamic>(listerQuery.Sql).ToList();
-
+                var columnsList = listerQuery.SelectColumnList.Select(x =>
+                {
+                    var splittedKey = x.Split(".");
+                    return new TableColumns()
+                    {
+                        Field = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
+                        HeaderName = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
+                        TableName = splittedKey[0],
+                        Hideable = splittedKey[1] == "id" ? false : true,
+                    };
+                }).ToList();
+                
                 listerQuery.SelectColumnList.Add(table.TableName + ".id");
                 return new DataListerResponse<dynamic>()
                 {
@@ -576,17 +587,7 @@ namespace Jittor.App.Services
                     TotalItemCount = count,
                     IsSelectable = table.IsSelectable,
                     HideAddUpdate = hideAddUpdateForPages.Contains(request.PageId ?? 0),
-                    Columns = listerQuery.SelectColumnList.Select(x =>
-                    {
-                        var splittedKey = x.Split(".");
-                        return new
-                        {
-                            Field = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
-                            HeaderName = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
-                            TableName = splittedKey[0],
-                            Hideable = splittedKey[1] == "id" ? false : true,
-                        };
-                    }).ToList(),
+                    Columns = columnsList,
                     //PageName = table.UrlFriendlyName
                 };
             }
@@ -652,7 +653,7 @@ namespace Jittor.App.Services
                     Columns = listerQuery.SelectColumnList.Select(x =>
                     {
                         var splittedKey = x.Split(".");
-                        return new
+                        return new TableColumns()
                         {
                             Field = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
                             HeaderName = listerQuery.ColumnDictionary.GetValueOrDefault<string, string?>(x) ?? splittedKey[1],
