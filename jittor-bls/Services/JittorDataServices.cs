@@ -562,6 +562,7 @@ namespace Jittor.App.Services
                     Sort = request.Sort,
                     Filters = request.Filters,
                     PageId = request.PageId,
+                    idColumn = request.idColumn
                 };
                 var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
                 var count = tableContext.ExecuteScalar<int>(listerQuery.CountSql);

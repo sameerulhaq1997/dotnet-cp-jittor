@@ -97,7 +97,7 @@ namespace Jittor.Api.Controllers
             {
                 Request.Headers.TryGetValue("filters", out StringValues filtersString);
                 var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
-                // var lang = filters != null ? filters.FirstOrDefault(x => x.Field == "Articles.LanguageID")?.Value ?? "1" : "1";
+                 var lang = filters != null ? filters.FirstOrDefault(x => x.Field == "Articles.LanguageID")?.Value ?? "1" : "1";
 
                 filters = filters ?? new List<PageFilterModel>();
 
@@ -128,13 +128,14 @@ namespace Jittor.Api.Controllers
                     PageNumber = pageNumber,
                     PageSize = pageSize,
                     Sort = sort ?? "ArticleStatistics.PublishedOn ASC",
-                    Filters = filters
+                    Filters = filters,
+                    idColumn = "ArticleStatistics.ArticleID"
                 };
 
 
                 DynamicExtender? extender = null;
-                //if (filters != null && filters.Any(x => x.ExternalSearch == true))
-                //extender = this.GetExtandered("ArticleListerExtender");
+                if (filters != null && filters.Any(x => x.ExternalSearch == true))
+                extender = this.GetExtandered("ArticleListerExtender");
 
                 var res = _jittorService.GetPageLister(request, "ArticleStatistics", $"ArticleStatistics.ArticleID,ArticleStatistics.NewsTitle,ArticleStatistics.NewsSource,ArticleStatistics.Classification,ArticleStatistics.CreationDay,ArticleStatistics.CreatedBy", null, null);
                 return Ok(res);

@@ -333,6 +333,7 @@ namespace Jittor.App.Models
         public string? Sort { get; set; }
         public List<PageFilterModel>? Filters { get; set; } = null;
         public int? PageId { get; set; }
+        public string? idColumn { get; set; }
     }
     public class DropdownListerRequest : DataListerRequest
     {
@@ -344,7 +345,7 @@ namespace Jittor.App.Models
         public bool? TryConvert { get; set; }
         public string? Values { get; set; }
         public string? CustomOrdering { get; set; }
-        public string? idColumn { get; set; }
+        
     }
 
     public class DataListerResponse<T>
