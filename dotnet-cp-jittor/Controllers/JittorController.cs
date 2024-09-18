@@ -90,6 +90,60 @@ namespace Jittor.Api.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("page/lister/articlestatistics")]
+        public IActionResult GetPageListerArticleStatistics(int pageId = 0, int pageNumber = 1, int pageSize = 10, string? sort = null, string? extenderName = null)
+        {
+            try
+            {
+                Request.Headers.TryGetValue("filters", out StringValues filtersString);
+                var filters = filtersString.Count > 0 ? (JsonConvert.DeserializeObject<List<PageFilterModel>>(filtersString.ToString()) ?? new List<PageFilterModel>()) : null;
+                // var lang = filters != null ? filters.FirstOrDefault(x => x.Field == "Articles.LanguageID")?.Value ?? "1" : "1";
+
+                filters = filters ?? new List<PageFilterModel>();
+
+
+                filters.Add(new PageFilterModel
+                {
+                    Field = "ArticleStatistics.PublishedOn",
+                    Operator = "greaterorequal",
+                    Value = (DateTime.UtcNow.AddDays(-1)).ToString("yyyy/MM/dd"),
+                    Operation = "",
+                    FixedFilter = true
+                    //ExternalSearch = true
+                });
+                filters.Add(new PageFilterModel
+                {
+                    Field = "ArticleStatistics.PublishedOn",
+                    Operator = "lessorequal",
+                    Value = (DateTime.UtcNow).ToString("yyyy/MM/dd"),
+                    Operation = "AND",
+                    FixedFilter = true
+                    //ExternalSearch = true
+                });
+
+
+                var request = new DataListerRequest()
+                {
+                    PageId = pageId,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    Sort = sort ?? "ArticleStatistics.PublishedOn ASC",
+                    Filters = filters
+                };
+
+
+                DynamicExtender? extender = null;
+                //if (filters != null && filters.Any(x => x.ExternalSearch == true))
+                //extender = this.GetExtandered("ArticleListerExtender");
+
+                var res = _jittorService.GetPageLister(request, "ArticleStatistics", $"ArticleStatistics.ArticleID,ArticleStatistics.NewsTitle,ArticleStatistics.NewsSource,ArticleStatistics.Classification,ArticleStatistics.CreationDay,ArticleStatistics.CreatedBy", null, null);
+                return Ok(res);
+            }
+            catch (Exception ex)
+            {
+                return null;//throw new RecordNotFound(ex.Message);
+            }
+        }
         [HttpGet("page/record/{pageId}")]
         public IActionResult GetPageRecord(int pageId, int pageNumber = 1, int pageSize = 10, string? sort = null)
         {

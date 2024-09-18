@@ -344,6 +344,7 @@ namespace Jittor.App.Models
         public bool? TryConvert { get; set; }
         public string? Values { get; set; }
         public string? CustomOrdering { get; set; }
+        public string? idColumn { get; set; }
     }
 
     public class DataListerResponse<T>

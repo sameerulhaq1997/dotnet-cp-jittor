@@ -844,8 +844,15 @@ namespace Jittor.App.Services
                     return column + (alias == null ? "" : " as " + alias);
                 }));
             }
-
-            var primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " as Value, " : " as id, ");
+            string primaryKey = "";
+            if (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower()) != null)
+            {
+                primaryKey = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "") + (isDropDown ? " as Value, " : " as id, ");
+            }
+            else
+            {
+                primaryKey = request.TableName + "." + request.idColumn + (isDropDown ? " as Value, " : " as id, ");
+            }
             var sql = Sql.Builder.Append($"SELECT {primaryKey} {selectColumnsString} FROM {tableName} ");
 
             var countSql = Sql.Builder.Append($"SELECT COUNT(1) FROM {tableName}");
@@ -888,8 +895,12 @@ namespace Jittor.App.Services
             }
 
             var customOrderingCases = request.CustomOrdering?.Split(",").Select(x => new { id = (x.Split(":")[0]), position = x.Split(":")[1] }).ToList() ?? null;
-            var primaryKeyColumn = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "");
-            var orderString = orders.Count() > 0 ? string.Join(',', orders) : (primaryKeyColumn) + " DESC ";
+            string? primaryKeyColumn = request.idColumn;
+            if (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower()) != null)
+            {
+                primaryKeyColumn = request.TableName + "." + (tableColumns.FirstOrDefault(x => x.IsPrimaryKey == true & x.TableName.ToLower() == (request.TableName ?? "").ToLower())!.ColumnName ?? "");
+            }
+                var orderString = orders.Count() > 0 ? string.Join(',', orders) : (primaryKeyColumn) + " DESC ";
             if (request.IsDistinct == true)
             {
                 sql.Append($" GROUP BY {primaryKey.ToLower().Split("as")[0].Replace("," , "")}, {selectColumnsString.ToLower().Split("as")[0].Replace(",", "")}, {orderString.Split(" ")[0]} ");
