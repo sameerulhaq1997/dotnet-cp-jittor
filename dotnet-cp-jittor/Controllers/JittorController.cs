@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using dotnet_cp_jitter.Extender;
+using Jittor.App.Helpers;
 
 namespace Jittor.Api.Controllers
 {
@@ -91,7 +92,7 @@ namespace Jittor.Api.Controllers
             }
         }
         [HttpGet("page/lister/articlestatistics")]
-        public IActionResult GetPageListerArticleStatistics(int pageId = 0, int pageNumber = 1, int pageSize = 10, string? sort = null, string? extenderName = null)
+        public IActionResult GetPageListerArticleStatistics(int pageId = 0, int pageNumber = 1, int pageSize = 10, string? sort = null, string? extenderName = null, bool isExport = false)
         {
             try
             {
@@ -101,43 +102,90 @@ namespace Jittor.Api.Controllers
 
                 filters = filters ?? new List<PageFilterModel>();
 
-
-                filters.Add(new PageFilterModel
-                {
-                    Field = "ArticleStatistics.PublishedOn",
-                    Operator = "greaterorequal",
-                    Value = (DateTime.UtcNow.AddDays(-1)).ToString("yyyy/MM/dd"),
-                    Operation = "",
-                    FixedFilter = true
-                    //ExternalSearch = true
-                });
-                filters.Add(new PageFilterModel
-                {
-                    Field = "ArticleStatistics.PublishedOn",
-                    Operator = "lessorequal",
-                    Value = (DateTime.UtcNow).ToString("yyyy/MM/dd"),
-                    Operation = "AND",
-                    FixedFilter = true
-                    //ExternalSearch = true
-                });
-
-
                 var request = new DataListerRequest()
                 {
                     PageId = pageId,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
+                    PageNumber = isExport ? 0 : pageNumber,
+                    PageSize = isExport ? 0 : pageSize,
                     Sort = sort ?? "ArticleStatistics.PublishedOn ASC",
                     Filters = filters,
-                    idColumn = "ArticleStatistics.ArticleID"
+                    idColumn = "ArticleID"
                 };
 
 
                 DynamicExtender? extender = null;
                 if (filters != null && filters.Any(x => x.ExternalSearch == true))
                 extender = this.GetExtandered("ArticleListerExtender");
+                var columns = $"ArticleStatistics.ArticleID,ArticleStatistics.NewsTitle,ArticleStatistics.NewsSource,ArticleStatistics.Classification,ArticleStatistics.CreationDay,ArticleStatistics.CreatedBy";
+                var res = _jittorService.GetPageLister(request, "ArticleStatistics", columns, null, null);
+                var items = res?.Items ?? new List<dynamic>();
 
-                var res = _jittorService.GetPageLister(request, "ArticleStatistics", $"ArticleStatistics.ArticleID,ArticleStatistics.NewsTitle,ArticleStatistics.NewsSource,ArticleStatistics.Classification,ArticleStatistics.CreationDay,ArticleStatistics.CreatedBy", null, null);
+                if (isExport && items != null)
+                {
+                    //var colList = (columns.Split(',')).Select(col => col.Split('.').Last()).ToList(); ;
+                    //using (var workbook = new ClosedXML.Excel.XLWorkbook())
+                    //{
+                    //    var worksheet = workbook.Worksheets.Add("ArticleStatistics");
+
+                    //    int columnIndx = 1;
+                    //    foreach (var item in colList)
+                    //    {
+                    //        worksheet.Cell(1, columnIndx).Value = item;
+                    //        columnIndx++;
+                    //    }
+
+                    //    int row = 2; 
+                    //    foreach (var item in items)
+                    //    {
+                    //        columnIndx = 1;
+                    //        var newItem = (IDictionary<string, object>)item;
+                    //        foreach (var col in colList)
+                    //        {
+                    //            var isExist = newItem.TryGetValue(col.ToLower(), out object value);
+                    //            if (isExist)
+                    //            {
+                    //                if (value is string strValue)
+                    //                {
+                    //                    worksheet.Cell(row, columnIndx).Value = strValue;
+                    //                }
+                    //                else if (value is int intValue)
+                    //                {
+                    //                    worksheet.Cell(row, columnIndx).Value = intValue;
+                    //                }
+                    //                else if (value is double doubleValue)
+                    //                {
+                    //                    worksheet.Cell(row, columnIndx).Value = doubleValue;
+                    //                }
+                    //                else if (value != null)
+                    //                {
+                    //                    worksheet.Cell(row, columnIndx).Value = value.ToString();
+                    //                }
+                    //                else
+                    //                {
+                    //                    worksheet.Cell(row, columnIndx).Value = string.Empty;
+                    //                }
+                    //                columnIndx++;
+                    //            }
+                                
+                    //        }
+                    //        row++;
+                    //    }
+                       
+                    //    var memoryStream = new MemoryStream();
+                    //    try
+                    //    {
+                    //        workbook.SaveAs(memoryStream);
+                    //        memoryStream.Position = 0; // Reset the position to the beginning of the stream
+                    //        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "ArticleStatistics.xlsx");
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
+                    //        Console.WriteLine($"Error saving workbook: {ex.Message}");
+                    //        Console.WriteLine(ex.StackTrace);
+                    //        return StatusCode(500, "An error occurred while saving the Excel file.");
+                    //    }
+                    //}
+                }
                 return Ok(res);
             }
             catch (Exception ex)

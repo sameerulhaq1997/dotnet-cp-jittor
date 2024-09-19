@@ -917,7 +917,7 @@ namespace Jittor.App.Services
             }
             sql.OrderBy((customOrderingCases != null && customOrderingCases.Count > 0) ? customOrderingSQL : orderString);
 
-            if (!isDropDown)
+            if (!isDropDown && request.PageSize > 0)
             {
                 int offset = ((request.PageNumber ?? 0) - 1) * (request.PageSize ?? 0);
                 sql.Append($" OFFSET {offset} ROWS FETCH NEXT {(request.PageSize ?? 0)} ROWS ONLY ");
