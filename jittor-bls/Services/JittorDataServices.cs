@@ -522,7 +522,7 @@ namespace Jittor.App.Services
         {
             try
             {
-                List<int> hideAddUpdateForPages = new List<int>() { 209};
+                //List<int> hideAddUpdateForPages = new List<int>() { 209};
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
@@ -587,7 +587,7 @@ namespace Jittor.App.Services
                     PageSize = request.PageSize ?? 0,
                     TotalItemCount = count,
                     IsSelectable = table.IsSelectable,
-                    HideAddUpdate = hideAddUpdateForPages.Contains(request.PageId ?? 0),
+                    HideAddUpdate = (table.IsUpdateable != null && table.IsUpdateable == false) ? true : false,//hideAddUpdateForPages.Contains(request.PageId ?? 0),
                     Columns = columnsList,
                     //PageName = table.UrlFriendlyName
                 };
@@ -650,7 +650,7 @@ namespace Jittor.App.Services
                     PageSize = request.PageSize ?? 0,
                     TotalItemCount = count,
                     IsSelectable = table.IsSelectable,
-                    HideAddUpdate = hideAddUpdateForPages.Contains(request.PageId ?? 0),
+                    HideAddUpdate = (table.IsUpdateable != null && table.IsUpdateable == false) ? true : false,//hideAddUpdateForPages.Contains(request.PageId ?? 0),
                     Columns = listerQuery.SelectColumnList.Select(x =>
                     {
                         var splittedKey = x.Split(".");

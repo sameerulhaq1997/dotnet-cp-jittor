@@ -286,6 +286,8 @@ namespace Jittor.App.DataServices
             [Column] public string Joins { get;  set; }
             [Column] public int? Page { get;  set; }
             [Column] public string ProjectId { get; set; }
+            [Column] public bool? IsUpdateable { get; set; }
+            [Column] public bool? IsDeleteable { get; set; }
 
         }
 
