@@ -813,7 +813,7 @@ namespace Jittor.App.Services
             List<string> JoinTypes = new List<string>() { "inner join", "outer join", "cross join", "left join", "right join" };
 
             selectClause = selectClause.ToLower();
-            var selectColumnList = selectClause.Split(',').Select(x => x.Split("as")[0].Trim()).ToList();
+            var selectColumnList = selectClause.Split(',').Select(x => x.Split(" as ")[0].Trim()).ToList();
             var asColumnDictionary = selectClause.Split(',').Select(column => column.Split(" as ")).Where(parts => parts.Length == 2).ToDictionary(parts => parts[0], parts => ValidAlias(parts[1])) ?? new Dictionary<string, string?>();
 
             var tableName = (request.TableName ?? "").Split(",")[0];
