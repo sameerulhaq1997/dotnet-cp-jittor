@@ -522,7 +522,7 @@ namespace Jittor.App.Services
         {
             try
             {
-                List<int> hideAddUpdateForPages = new List<int>() { 186};
+                List<int> hideAddUpdateForPages = new List<int>() { 209};
                 using var tableContext = _tableContext;
                 using var context = DataContexts.GetJittorDataContext();
 
