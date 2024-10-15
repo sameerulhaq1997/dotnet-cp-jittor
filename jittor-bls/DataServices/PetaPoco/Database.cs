@@ -349,7 +349,7 @@ namespace PetaPoco
         /// <seealso cref="KeepConnectionAlive" />
         public void OpenSharedConnection()
         {
-            if (_sharedConnectionDepth == 0)
+            if (_sharedConnectionDepth == 0 || _sharedConnection == null)
             {
                 _sharedConnection = _factory.CreateConnection();
                 _sharedConnection.ConnectionString = _connectionString;
@@ -662,6 +662,20 @@ namespace PetaPoco
 
         public IDbCommand CreateCommand(IDbConnection connection, CommandType commandType, string sql, params object[] args)
         {
+            //if (connection == null)
+            //{
+            //    connection = _factory.CreateConnection();
+            //    connection.ConnectionString = _connectionString;
+
+            //    if (connection.State == ConnectionState.Broken)
+            //        connection.Close();
+
+            //    if (connection.State == ConnectionState.Closed)
+            //        connection.Open();
+
+            //    connection = OnConnectionOpened(connection);
+            //}
+
             IDbCommand cmd = connection.CreateCommand();
             cmd.Connection = connection;
             cmd.CommandType = commandType;
@@ -730,6 +744,11 @@ namespace PetaPoco
         {
             DbConnectionEventArgs args = new DbConnectionEventArgs(conn);
             ConnectionOpened?.Invoke(this, args);
+            if(args.Connection == null)
+            {
+                OpenSharedConnection();
+                OnConnectionOpened(_sharedConnection);
+            }
             return args.Connection;
         }
 
@@ -1515,6 +1534,20 @@ namespace PetaPoco
             OpenSharedConnection();
             try
             {
+                //if (_sharedConnection == null)
+                //{
+                //    _sharedConnection = _factory.CreateConnection();
+                //    _sharedConnection.ConnectionString = _connectionString;
+
+                //    if (_sharedConnection.State == ConnectionState.Broken)
+                //        _sharedConnection.Close();
+
+                //    if (_sharedConnection.State == ConnectionState.Closed)
+                //        _sharedConnection.Open();
+
+                //    _sharedConnection = OnConnectionOpened(_sharedConnection);
+                //}
+
                 using IDbCommand cmd = CreateCommand(_sharedConnection, commandType, sql, args);
                 IDataReader r;
                 PocoData pd = PocoData.ForType(typeof(T), _defaultMapper);
