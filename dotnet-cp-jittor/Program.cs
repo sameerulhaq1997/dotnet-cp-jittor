@@ -1,8 +1,13 @@
 
+using Jittor.App;
 using Jittor.App.DataServices;
 using Jittor.App.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
+using PetaPoco;
+using System.Collections.Concurrent;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,13 +15,22 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+var configurationBuilder = new ConfigurationBuilder();
+string path = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+configurationBuilder.AddJsonFile(path, false);
+
+List<string> connectionStrings= new List<string>();
+connectionStrings.Add(configurationBuilder.Build().GetSection("ConnectionStrings:SCConnectionString").Value);
+connectionStrings.Add(configurationBuilder.Build().GetSection("ConnectionStrings:CPConnectionString").Value);
+connectionStrings.Add(configurationBuilder.Build().GetSection("ConnectionStrings:ArgaamConnectionString").Value);
+builder.Services.AddJittorApp(connectionStrings);
+
 //Register Services
-
-
-
 builder.Services.AddSingleton<JittorDataServices>(provider =>
 {
     string projectId = builder.Configuration.GetValue<string>("ProjectId");
+    var dbPoolManager = provider.GetRequiredService<DatabasePoolManager>();
+    //var repository = dbPoolManager.GetDatabase();  // Retrieve from the pool
     var repository = new FrameworkRepository("ConnectionStrings:CPConnectionString")
     {
         EnableAutoSelect = true,
@@ -25,7 +39,7 @@ builder.Services.AddSingleton<JittorDataServices>(provider =>
     {
         EnableAutoSelect = true,
     };
-    return new JittorDataServices(repository, projectId, secondaryRepository);
+    return new JittorDataServices(repository, projectId, dbPoolManager,secondaryRepository);
 });
 builder.Services.AddTransient<JittorApiService>();
 
@@ -54,7 +68,7 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
-
+app.Services.GetService<DatabasePoolManager>();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
