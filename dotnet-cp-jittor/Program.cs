@@ -19,11 +19,13 @@ var configurationBuilder = new ConfigurationBuilder();
 string path = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
 configurationBuilder.AddJsonFile(path, false);
 
-List<string> connectionStrings= new List<string>();
-connectionStrings.Add(configurationBuilder.Build().GetSection("ConnectionStrings:SCConnectionString").Value);
-connectionStrings.Add(configurationBuilder.Build().GetSection("ConnectionStrings:CPConnectionString").Value);
-connectionStrings.Add(configurationBuilder.Build().GetSection("ConnectionStrings:ArgaamConnectionString").Value);
-builder.Services.AddJittorApp(connectionStrings);
+var connectionStrings = new Dictionary<string, string>
+        {
+            { "SCConnectionString", configurationBuilder.Build().GetSection("ConnectionStrings:SCConnectionString").Value ?? "" },
+            { "CPConnectionString", configurationBuilder.Build().GetSection("ConnectionStrings:CPConnectionString").Value ?? "" },
+            { "ArgaamConnectionString", configurationBuilder.Build().GetSection("ConnectionStrings:ArgaamConnectionString").Value ?? "" }
+        };
+builder.Services.AddJittorApp(connectionStrings,10);
 
 //Register Services
 builder.Services.AddSingleton<JittorDataServices>(provider =>

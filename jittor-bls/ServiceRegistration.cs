@@ -13,7 +13,7 @@ namespace Jittor.App
 {
     public static class ServiceRegistation
     {
-        public static void AddJittorApp(this IServiceCollection services, List<string> connectionStrings)
+        public static void AddJittorApp(this IServiceCollection services, Dictionary<string, string> connectionStrings, int poolSize)
         {
             services.AddSingleton<BlockingCollection<Database>>();
             //Register Services
@@ -24,7 +24,7 @@ namespace Jittor.App
                 //configurationBuilder.AddJsonFile(path, false);
                 //string jittorConnectionString = connectionString;
                 var dbPool = provider.GetService<BlockingCollection<Database>>();
-                return new DatabasePoolManager(15, connectionStrings, dbPool);
+                return new DatabasePoolManager(poolSize, connectionStrings, dbPool);
             });
         }
     }

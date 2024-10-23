@@ -13,44 +13,72 @@ namespace Jittor.App.DataServices
     public class DatabasePoolManager
     {
         private readonly BlockingCollection<Database> _dbPool;
-        public DatabasePoolManager(int poolSize, List<string> connectionStrings, BlockingCollection<Database> dbPool)
+        Dictionary<string, string> _connectionStrings;
+        public DatabasePoolManager(int poolSize, Dictionary<string, string> connectionStrings, BlockingCollection<Database> dbPool)
         {
+            _connectionStrings = connectionStrings;
             _dbPool = dbPool;
             for (int j = 0; j < connectionStrings.Count; j++)   
             {
                 for (int i = 0; i < poolSize; i++)
                 {
-                    var db = new Database(connectionStrings[j], "System.Data.SqlClient");
+                    var db = new Database(connectionStrings.ElementAt(j).Value, "System.Data.SqlClient");
                     _dbPool.Add(db);
                 }
             }
         }
 
-        //public Database GetDatabase()
+        //public Database GetDatabase(string connectionString)
         //{
-        //    //return _dbPool.Take(); // Get an available database instance
-        //    if (_dbPool.TryTake(out var dbInstance))
+        //    foreach (var dbInstance in _dbPool)
         //    {
-        //        return dbInstance; // Return the instance from the pool
+        //        if (dbInstance.ConnectionString == connectionString)
+        //        {
+        //            //var pool = _dbPool.Where(x => x.ConnectionString == connectionString).FirstOrDefault();
+        //            if (_dbPool.TryTake(out var db))
+        //            {
+        //                return db; 
+        //            }
+        //        }
         //    }
 
-        //    // If the pool is exhausted, create a new connection on the spot
-        //    return CreateNewDatabaseInstance(_connectionString);
+        //    return CreateNewDatabaseInstance(connectionString);
         //}
-        public Database GetDatabase(string connectionString)
+
+        public Database GetDatabase(string name)
         {
-            foreach (var dbInstance in _dbPool)
+            Database matchingDbInstance = null;
+            List<Database> tempList = new List<Database>();
+
+            // Iterate over the _dbPool to find the matching database instance
+            while (_dbPool.TryTake(out var dbInstance))
             {
-                if (dbInstance.ConnectionString == connectionString)
+                
+                if (dbInstance.ConnectionString == _connectionStrings[name])
                 {
-                    if (_dbPool.TryTake(out var db))
-                    {
-                        return db; 
-                    }
+                    matchingDbInstance = dbInstance;
+                    break;
+                }
+                else
+                {
+                    // Store non-matching instances in a temp list
+                    tempList.Add(dbInstance);
                 }
             }
 
-            return CreateNewDatabaseInstance(connectionString);
+            // Add back non-matching instances to the _dbPool
+            foreach (var db in tempList)
+            {
+                _dbPool.Add(db);
+            }
+
+            // Return the matching database instance if found, otherwise create a new one
+            if (matchingDbInstance != null)
+            {
+                return matchingDbInstance;
+            }
+
+            return CreateNewDatabaseInstance(_connectionStrings[name]);
         }
         public void ReleaseDatabase(Database db)
         {

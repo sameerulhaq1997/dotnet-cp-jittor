@@ -15,6 +15,7 @@ using Newtonsoft.Json.Linq;
 using System.Transactions;
 using System.Collections;
 using System.Text.RegularExpressions;
+using System.Data.Common;
 
 namespace Jittor.App.Services
 {
@@ -43,7 +44,7 @@ namespace Jittor.App.Services
         }
         public async Task<JittorPageModel?> GetPageModel(string? urlFriendlyPageName = null, int? pageID = null)
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             JittorPageModel? model = new JittorPageModel();
             try
             {
@@ -94,7 +95,7 @@ namespace Jittor.App.Services
         }
         public async Task<List<JITAttributeType>> GetAttributeTypes()
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 return await Executor.Instance.GetDataAsync<List<JITAttributeType>>(() =>
@@ -117,7 +118,7 @@ namespace Jittor.App.Services
         }
         public JittorPageModel GetPageId(int PageId)
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {   
             JittorPageModel? model = new JittorPageModel();
@@ -282,7 +283,7 @@ namespace Jittor.App.Services
             {
                 return await Executor.Instance.GetDataAsync<List<JITPage>>(() =>
                 {
-                    using var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+                    using var context = _dbPoolManager.GetDatabase("SCConnection");
                     //using var context = DataContexts.GetJittorDataContext();
                     var sql = ($"Select * from JITPages Where ProjectId = '{_projectId}'");
                     return context.Fetch<JITPage>(sql).ToList();
@@ -295,7 +296,7 @@ namespace Jittor.App.Services
         }
         public async Task<bool> DeleteForm(int pageID)
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 //using var context = DataContexts.GetJittorDataContext();
@@ -322,7 +323,7 @@ namespace Jittor.App.Services
         }
         public async Task<List<FormBuilderListerModel>> GetFormBuilderLister(int pageId = 0)
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 return await Executor.Instance.GetDataAsync<List<FormBuilderListerModel>>(() =>
@@ -411,7 +412,7 @@ namespace Jittor.App.Services
         }
         public async Task<List<dynamic>> GetFormBuilderAllData()
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 return await Executor.Instance.GetDataAsync<List<dynamic>>(() =>
@@ -503,7 +504,7 @@ namespace Jittor.App.Services
         }
         public async Task<bool> CreateNewPage(FormPageModel form, int? pageID)
         {
-            var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+            var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 var attributeTypes = await GetAttributeTypes();
@@ -595,11 +596,11 @@ namespace Jittor.App.Services
         }
         public DataListerResponse<dynamic>? GetPageLister(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null,string? externalScripts = null)
         {
-                var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+                var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 //List<int> hideAddUpdateForPages = new List<int>() { 209};
-                using var tableContext = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.CPConnection));
+                using var tableContext = _dbPoolManager.GetDatabase("CPConnection");
                 //using var tableContext = _tableContext;
                 //using var context = DataContexts.GetJittorDataContext();
 
@@ -681,7 +682,7 @@ namespace Jittor.App.Services
         }
         public DataListerResponse<dynamic>? GetPageRecord(DataListerRequest request, string? externalTable = null, string? externalSelectedColumns = null, List<PageJoinModel>? externalJoins = null, string? externalScripts = null)
         {
-                var context = _dbPoolManager.GetDatabase(ConnectionStrings.GetConnectionString(ConnectionType.SCConnection));
+                var context = _dbPoolManager.GetDatabase("SCConnection");
             try
             {
                 List<int> hideAddUpdateForPages = new List<int>() { 186 };
@@ -759,10 +760,9 @@ namespace Jittor.App.Services
         }
         public DropdownListerResponse PoplulateDropDowns(DropdownListerRequest request)
         {
-                //var context = _dbPoolManager.GetDatabase("dfsdsf");
+                using var tableContext = _dbPoolManager.GetDatabase(request.IsArgaamContext == true ? "ArgaamConnection" ?? "CPConnection" : "CPConnection");
             try
             {
-                using var tableContext = _dbPoolManager.GetDatabase(request.IsArgaamContext == true ? ConnectionStrings.GetConnectionString(ConnectionType.ArgaamConnection) ?? ConnectionStrings.GetConnectionString(ConnectionType.CPConnection) : ConnectionStrings.GetConnectionString(ConnectionType.CPConnection));
                 //using var tableContext = request.IsArgaamContext == true ? _secondaryTableContext ?? _tableContext : _tableContext;
                 //using var context = DataContexts.GetJittorDataContext();
 
@@ -788,7 +788,7 @@ namespace Jittor.App.Services
             }
             finally
             {
-                //_dbPoolManager.ReleaseDatabase(tableContext);
+                _dbPoolManager.ReleaseDatabase(tableContext);
             }
         }
 
