@@ -47,37 +47,6 @@ namespace Jittor.App.DataServices
 
         public Database GetDatabase(string name)
         {
-            Database matchingDbInstance = null;
-            List<Database> tempList = new List<Database>();
-
-            // Iterate over the _dbPool to find the matching database instance
-            while (_dbPool.TryTake(out var dbInstance))
-            {
-                
-                if (dbInstance.ConnectionString == _connectionStrings[name])
-                {
-                    matchingDbInstance = dbInstance;
-                    break;
-                }
-                else
-                {
-                    // Store non-matching instances in a temp list
-                    tempList.Add(dbInstance);
-                }
-            }
-
-            // Add back non-matching instances to the _dbPool
-            foreach (var db in tempList)
-            {
-                _dbPool.Add(db);
-            }
-
-            // Return the matching database instance if found, otherwise create a new one
-            if (matchingDbInstance != null)
-            {
-                return matchingDbInstance;
-            }
-
             return CreateNewDatabaseInstance(_connectionStrings[name]);
         }
         public void ReleaseDatabase(Database db)

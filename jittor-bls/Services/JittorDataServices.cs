@@ -16,6 +16,7 @@ using System.Transactions;
 using System.Collections;
 using System.Text.RegularExpressions;
 using System.Data.Common;
+using System.Xml.Linq;
 
 namespace Jittor.App.Services
 {
@@ -758,9 +759,10 @@ namespace Jittor.App.Services
                 _dbPoolManager.ReleaseDatabase(context);
             }
         }
+        private static readonly object _lock = new object();
+
         public DropdownListerResponse PoplulateDropDowns(DropdownListerRequest request)
         {
-                using var tableContext = _dbPoolManager.GetDatabase(request.IsArgaamContext == true ? "ArgaamConnection" ?? "CPConnection" : "CPConnection");
             try
             {
                 //using var tableContext = request.IsArgaamContext == true ? _secondaryTableContext ?? _tableContext : _tableContext;
@@ -770,25 +772,28 @@ namespace Jittor.App.Services
                 request.Filters = request.Filters ?? new List<PageFilterModel>();
 
                 var listerQuery = BuildListerQuery(request, (request.ColumnName ?? ""), joins,null, true);
-                var list = tableContext.Fetch<FieldOption>(listerQuery.Sql).ToList();
-
-                var defaultValues = (request.Values ?? "").Split(",").ToList();
-                if(defaultValues.Any())
-                    list.Where(x => defaultValues.Contains(x.Value.ToString())).ToList().ForEach(x => x.IsSelected = true);
-
-                return new DropdownListerResponse()
+                lock (_lock)
                 {
-                    Items = list
-                };
+                    using (var db = _dbPoolManager.GetDatabase(request.IsArgaamContext == true ? "ArgaamConnection" ?? "CPConnection" : "CPConnection"))
+                    {
+                        var list = db.Fetch<FieldOption>(listerQuery.Sql).ToList();
+
+                        var defaultValues = (request.Values ?? "").Split(",").ToList();
+                        if (defaultValues.Any())
+                            list.Where(x => defaultValues.Contains(x.Value.ToString())).ToList().ForEach(x => x.IsSelected = true);
+
+                        return new DropdownListerResponse()
+                        {
+                            Items = list
+                        };
+                    }
+                }
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 return null;
-            }
-            finally
-            {
-                _dbPoolManager.ReleaseDatabase(tableContext);
             }
         }
 

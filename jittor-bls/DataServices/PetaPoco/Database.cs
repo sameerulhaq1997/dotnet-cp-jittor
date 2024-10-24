@@ -1528,73 +1528,59 @@ namespace PetaPoco
         }
 
 #endif
-
         protected virtual IEnumerable<T> ExecuteReader<T>(CommandType commandType, string sql, params object[] args)
         {
-            OpenSharedConnection();
-            try
+            using (var connection = _factory.CreateConnection())  // Open and dispose of the connection correctly
             {
-                //if (_sharedConnection == null)
-                //{
-                //    _sharedConnection = _factory.CreateConnection();
-                //    _sharedConnection.ConnectionString = _connectionString;
+                connection.ConnectionString = _connectionString;
+                connection.Open();  // Open the connection
 
-                //    if (_sharedConnection.State == ConnectionState.Broken)
-                //        _sharedConnection.Close();
-
-                //    if (_sharedConnection.State == ConnectionState.Closed)
-                //        _sharedConnection.Open();
-
-                //    _sharedConnection = OnConnectionOpened(_sharedConnection);
-                //}
-
-                using IDbCommand cmd = CreateCommand(_sharedConnection, commandType, sql, args);
-                IDataReader r;
-                PocoData pd = PocoData.ForType(typeof(T), _defaultMapper);
-                try
+                using (IDbCommand cmd = CreateCommand(connection, commandType, sql, args))
                 {
-                    r = ExecuteReaderHelper(cmd);
-                }
-                catch (Exception x)
-                {
-                    if (OnException(x))
-                        throw;
-                    yield break;
-                }
-
-                Func<IDataReader, T> factory = pd.GetFactory(cmd.CommandText, _sharedConnection.ConnectionString, 0, r.FieldCount, r,
-                    _defaultMapper) as Func<IDataReader, T>;
-                using (r)
-                {
-                    while (true)
+                    IDataReader r;
+                    PocoData pd = PocoData.ForType(typeof(T), _defaultMapper);
+                    try
                     {
-                        T poco;
-                        try
-                        {
-                            if (!r.Read())
-                                yield break;
-                            poco = factory(r);
-                        }
-                        catch (Exception x)
-                        {
-                            if (OnException(x))
-                                throw;
-                            yield break;
-                        }
+                        r = ExecuteReaderHelper(cmd);  // Execute the reader command
+                    }
+                    catch (Exception x)
+                    {
+                        if (OnException(x))
+                            throw;
+                        yield break;  // Stop execution in case of an error
+                    }
 
-                        yield return poco;
+                    Func<IDataReader, T> factory = pd.GetFactory(cmd.CommandText, connection.ConnectionString, 0, r.FieldCount, r, _defaultMapper) as Func<IDataReader, T>;
+
+                    using (r)  // Ensure the reader is disposed after use
+                    {
+                        while (true)
+                        {
+                            T poco;
+                            try
+                            {
+                                if (!r.Read())  // Read each row
+                                    yield break;
+
+                                poco = factory(r);  // Map the data to POCO objects
+                            }
+                            catch (Exception x)
+                            {
+                                if (OnException(x))
+                                    throw;
+                                yield break;
+                            }
+
+                            yield return poco;  // Return each result as it is processed
+                        }
                     }
                 }
             }
-            finally
-            {
-                CloseSharedConnection();
-            }
         }
 
-#endregion
+        #endregion
 
-#region operation: Exists
+        #region operation: Exists
 
         /// <inheritdoc />
         public bool Exists<T>(string sqlCondition, params object[] args)
