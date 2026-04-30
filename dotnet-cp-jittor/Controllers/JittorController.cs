@@ -13,7 +13,7 @@ using dotnet_cp_jitter.Extender;
 
 namespace Jittor.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/dynamic/[controller]")]
     [ApiController]
     public class JittorController : ControllerBase
     {
