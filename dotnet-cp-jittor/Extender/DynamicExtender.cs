@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace dotnet_cp_jitter.Extender
 {
 
-
+    
     public abstract  class DynamicExtender
     {
         public virtual string ExecuteFilterScripts(List<PageFilterModel>? filters) { return string.Empty; }
@@ -51,9 +51,7 @@ namespace dotnet_cp_jitter.Extender
     {
         public override string ExecuteDeleteScripts(string value)
         {
-
-            return " ";
-            //return $"Update Articles Set IsDeleted = 1,ArticleStatusID = 7 Where ArticleID = {value}";
+            return $"Update Articles Set IsDeleted = 1,ArticleStatusID = 7 Where ArticleID = {value}";
         }
     }
 }

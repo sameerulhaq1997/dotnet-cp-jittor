@@ -272,7 +272,10 @@ namespace Jittor.Api.Controllers
         }
         private DynamicExtender GetExtandered(string name)
         {
-            var obj = Activator.CreateInstance("Jittor.Api", string.Format("dotnet_cp_jitter.Extender.{0}", name));
+
+
+            var typeName = $"dotnet_cp_jitter.Extender.{name}";
+            var obj = Activator.CreateInstance("Jittor.Api", typeName);
             return (DynamicExtender)obj.Unwrap();
         }
     }
