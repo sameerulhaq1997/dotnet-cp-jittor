@@ -265,14 +265,12 @@ namespace Jittor.App.Services
             return tableColumnList;
         }
 
-
-        public List<JittorColumnInfo> GetTableAndChildTableColumns(string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
+        public List<JittorColumnInfo> GetTableAndChildTableColumns( string tableName, string? schemaName = "dbo", FrameworkRepository? context = null)
         {
-            var tablesToGet = tableName.Contains(",") ? tableName.ToLower().Split(",").ToList() : GetAllRelatedTables(tableName);
-            var parentData = GetTableSchema(tablesToGet, schemaName, context); 
-            return parentData;
-
+            List<string> tables = tableName.Contains(",")  ? tableName.ToLower().Split(",").Select(t => t.Trim()).ToList() : GetAllRelatedTables(tableName);
+            return GetTableSchema(tables, schemaName, context);
         }
+
         public List<string> GetAllTables()
         {
             return tableNodes.Select(x => x.TableName).Distinct().ToList();
@@ -601,7 +599,7 @@ namespace Jittor.App.Services
             try
             {
                 //List<int> hideAddUpdateForPages = new List<int>() { 209};
-                using var tableContext = _dbPoolManager.GetDatabase("CPConnection");
+                using var tableContext = _dbPoolManager.GetDatabase("CMSDbConnection");
                 //using var tableContext = _tableContext;
                 //using var context = DataContexts.GetJittorDataContext();
 
