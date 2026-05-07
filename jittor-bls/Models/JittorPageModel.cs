@@ -334,7 +334,10 @@ namespace Jittor.App.Models
         public List<PageFilterModel>? Filters { get; set; } = null;
         public int? PageId { get; set; }
         public string? idColumn { get; set; }
+        public bool? IsDistinctRows { get; set; }
     }
+
+
     public class DropdownListerRequest : DataListerRequest
     {
         public bool? IsArgaamContext { get; set; }

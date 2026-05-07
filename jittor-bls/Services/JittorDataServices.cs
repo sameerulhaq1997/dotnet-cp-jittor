@@ -599,7 +599,7 @@ namespace Jittor.App.Services
             try
             {
                 //List<int> hideAddUpdateForPages = new List<int>() { 209};
-                using var tableContext = _dbPoolManager.GetDatabase("CMSDbConnection");
+                using var tableContext = _dbPoolManager.GetDatabase("CPConnection");
                 //using var tableContext = _tableContext;
                 //using var context = DataContexts.GetJittorDataContext();
 
@@ -639,7 +639,8 @@ namespace Jittor.App.Services
                     Sort = request.Sort,
                     Filters = request.Filters,
                     PageId = request.PageId,
-                    idColumn = request.idColumn
+                    idColumn = request.idColumn,
+                    IsDistinctRows = request.IsDistinctRows,
                 };
                 var listerQuery = BuildListerQuery(newRequest, selectClause, joins,externalScripts);
                 var count = tableContext.ExecuteScalar<int>(listerQuery.CountSql);
@@ -949,7 +950,9 @@ namespace Jittor.App.Services
             {
                 primaryKey = request.TableName + "." + request.idColumn + (isDropDown ? " as Value, " : " as id, ");
             }
-            var sql = Sql.Builder.Append($"SELECT {primaryKey} {selectColumnsString} FROM {tableName} ");
+       
+            var sql = Sql.Builder.Append($"SELECT {(request.IsDistinctRows == true ? "DISTINCT " : "")}{primaryKey} {selectColumnsString} FROM {tableName} ");
+
 
             var countSql = Sql.Builder.Append($"SELECT COUNT(1) FROM {tableName}");
 
